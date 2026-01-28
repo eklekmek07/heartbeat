@@ -11,6 +11,7 @@ let historyOffset = 0;
 let historyHasMore = true;
 let isLoadingHistory = false;
 let subscribeInFlight = null;
+let lastSubscribeError = null;
 
 // DOM Elements
 const screenPairing = document.getElementById('screen-pairing');
@@ -30,6 +31,8 @@ const statusDot = connectionStatus.querySelector('.status-dot');
 const statusText = document.getElementById('status-text');
 const tapFeedback = document.getElementById('tap-feedback');
 const notificationStatus = document.getElementById('notification-status');
+const notificationStatusText = notificationStatus.querySelector('span');
+const notificationStatusButton = notificationStatus.querySelector('button');
 const displayNameInput = document.getElementById('display-name-input');
 const backgroundPreview = document.getElementById('background-preview');
 const historyList = document.getElementById('history-list');
@@ -263,6 +266,8 @@ async function subscribeToPush() {
   }
 
   subscribeInFlight = (async () => {
+    lastSubscribeError = null;
+    updateNotificationStatus();
     console.log('[HeartBeat] subscribeToPush called', { vapidPublicKey: !!vapidPublicKey, pairId });
 
     if (!vapidPublicKey || !pairId) {
@@ -270,17 +275,17 @@ async function subscribeToPush() {
       return;
     }
 
-    if (!('serviceWorker' in navigator)) {
-      console.log('[HeartBeat] Service workers not supported, aborting subscription');
-      updateNotificationStatus();
-      return;
-    }
+      if (!('serviceWorker' in navigator)) {
+        console.log('[HeartBeat] Service workers not supported, aborting subscription');
+        updateNotificationStatus();
+        return;
+      }
 
-    if (!('PushManager' in window)) {
-      console.log('[HeartBeat] PushManager not supported, aborting subscription');
-      updateNotificationStatus();
-      return;
-    }
+      if (!('PushManager' in window)) {
+        console.log('[HeartBeat] PushManager not supported, aborting subscription');
+        updateNotificationStatus();
+        return;
+      }
 
     try {
       console.log('[HeartBeat] Requesting notification permission...');
@@ -380,6 +385,8 @@ async function subscribeToPush() {
       updateNotificationStatus();
       console.log('[HeartBeat] subscribeToPush completed successfully');
     } catch (err) {
+      lastSubscribeError = err;
+      updateNotificationStatus();
       console.error('[HeartBeat] Failed to subscribe to push:', err);
     }
   })();
@@ -405,15 +412,42 @@ async function requestNotificationPermission() {
 
 function updateNotificationStatus() {
   if (!('Notification' in window)) {
+    notificationStatusText.textContent = '🔔 Notifications not supported on this device';
+    notificationStatusButton.classList.add('hidden');
     notificationStatus.classList.remove('hidden');
     return;
   }
 
-  if (Notification.permission === 'granted') {
-    notificationStatus.classList.add('hidden');
-  } else {
+  if (subscribeInFlight) {
+    notificationStatusText.textContent = '🔔 Setting up notifications...';
+    notificationStatusButton.textContent = 'Please wait';
+    notificationStatusButton.disabled = true;
+    notificationStatusButton.classList.remove('hidden');
     notificationStatus.classList.remove('hidden');
+    return;
   }
+
+  if (Notification.permission !== 'granted') {
+    notificationStatusText.textContent = '🔔 Enable notifications to receive taps';
+    notificationStatusButton.textContent = 'Enable';
+    notificationStatusButton.disabled = false;
+    notificationStatusButton.classList.remove('hidden');
+    notificationStatus.classList.remove('hidden');
+    return;
+  }
+
+  if (!pushSubscription || lastSubscribeError) {
+    notificationStatusText.textContent = lastSubscribeError
+      ? '🔔 Notifications setup failed. Tap to retry.'
+      : '🔔 Finish setting up notifications';
+    notificationStatusButton.textContent = 'Retry';
+    notificationStatusButton.disabled = false;
+    notificationStatusButton.classList.remove('hidden');
+    notificationStatus.classList.remove('hidden');
+    return;
+  }
+
+  notificationStatus.classList.add('hidden');
 }
 
 function waitForServiceWorkerController(timeoutMs = 3000) {
