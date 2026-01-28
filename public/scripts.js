@@ -278,11 +278,27 @@ async function subscribeToPush() {
     const registration = await navigator.serviceWorker.ready;
     console.log('[HeartBeat] Service worker ready, subscribing to push...');
 
-    pushSubscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
-    });
-    console.log('[HeartBeat] Push subscription created:', pushSubscription.endpoint.substring(0, 50) + '...');
+    try {
+      // Check existing subscription first
+      const existingSub = await registration.pushManager.getSubscription();
+      console.log('[HeartBeat] Existing subscription:', existingSub ? 'found' : 'none');
+
+      if (existingSub) {
+        pushSubscription = existingSub;
+        console.log('[HeartBeat] Using existing push subscription');
+      } else {
+        console.log('[HeartBeat] Creating new push subscription with VAPID key:', vapidPublicKey.substring(0, 20) + '...');
+        pushSubscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+        });
+        console.log('[HeartBeat] New push subscription created');
+      }
+      console.log('[HeartBeat] Push subscription endpoint:', pushSubscription.endpoint.substring(0, 50) + '...');
+    } catch (subscribeError) {
+      console.error('[HeartBeat] pushManager.subscribe() failed:', subscribeError.name, subscribeError.message);
+      throw subscribeError;
+    }
 
     // Send to server
     console.log('[HeartBeat] Sending subscription to server...');
