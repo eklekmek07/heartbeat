@@ -284,17 +284,13 @@ async function subscribeToPush() {
       controller: navigator.serviceWorker.controller ? 'yes' : 'no'
     });
 
-    // If no controller, the page might need a reload for SW to take control
+    // If no controller, the page needs to reload for SW to take control
     if (!navigator.serviceWorker.controller) {
-      console.log('[HeartBeat] No controller, page may need reload. Waiting for controllerchange...');
-      await new Promise((resolve) => {
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          console.log('[HeartBeat] Controller changed!');
-          resolve();
-        });
-        // Also resolve after 2 seconds in case controllerchange doesn't fire
-        setTimeout(resolve, 2000);
-      });
+      console.log('[HeartBeat] No controller - reloading page for SW to take control...');
+      // Small delay to let SW activate fully
+      await new Promise(r => setTimeout(r, 500));
+      window.location.reload();
+      return;
     }
 
     try {
