@@ -280,8 +280,22 @@ async function subscribeToPush() {
       active: registration.active?.state,
       waiting: registration.waiting?.state,
       installing: registration.installing?.state,
-      scope: registration.scope
+      scope: registration.scope,
+      controller: navigator.serviceWorker.controller ? 'yes' : 'no'
     });
+
+    // If no controller, the page might need a reload for SW to take control
+    if (!navigator.serviceWorker.controller) {
+      console.log('[HeartBeat] No controller, page may need reload. Waiting for controllerchange...');
+      await new Promise((resolve) => {
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          console.log('[HeartBeat] Controller changed!');
+          resolve();
+        });
+        // Also resolve after 2 seconds in case controllerchange doesn't fire
+        setTimeout(resolve, 2000);
+      });
+    }
 
     try {
       // Check existing subscription first
