@@ -1,5 +1,5 @@
 {
-  "name": "heartbeat-pwa",
+  "name": "heartbeat",
   "version": "1.0.0",
   "description": "HeartBeat - A PWA for couples to send instant 'thinking of you' notifications",
   "type": "module",
