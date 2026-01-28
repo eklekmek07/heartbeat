@@ -1,74 +1,183 @@
-# PWA Push Example 🚀🔔
+# HeartBeat
 
-Welcome to my repo which aims to provide you the basics for creating a valid Progressive Web App (PWA) with implemented push notifications using the [Web Push API](https://developer.mozilla.org/en-US/docs/Web/API/Push_API). As of iOS 16.4 you can have this feature on Apple devices as well so it's safe to say that right now every modern browser supports Push Notifications.
+A lightweight PWA that lets couples send instant "thinking of you" notifications to each other with a single tap.
 
-## Project structure 🗂️
+Built with vanilla JavaScript — no frameworks, no complexity. Just pure, fast, romantic vibes.
 
-The project consists of a small Node.js server which uses [Express](https://expressjs.com/) to provide some basic back-end functionality and serves the front-end web page.
+## Features
 
-### Back-end 🔧
+**Core**
+- Pair two devices with a 6-digit code
+- Send emotion taps: Love, Wave, Kiss, Fire
+- Real-time connection status
+- Works on iOS, Android, and desktop
 
-The backend is located in the `/api` directory and is a Node.js application that uses three main libraries for this example:
-- ⚡ [Express](https://expressjs.com/) framework for creating APIs with a few endpoints and serving the application
-- 🔔 [web-push](https://github.com/web-push-libs/web-push) for pushing notifications
-- 🗄️ [SQLite3 for Node](https://github.com/TryGhost/node-sqlite3) for creating a small local database to save user subscriptions. These subscriptions are necessary to push notifications using the web-push library.
+**Customization**
+- Custom display names in notifications ("kusum sent you ❤️")
+- Shared background image (both partners see the same)
+- Send photos to your partner
+- Message history with timestamps
 
-File structure:
-- `app.js` - the main file of the Node app which registers the routes and bootstraps the server app.
-- `db.js` - this module encapsulates the sqlite database functionality by initializing the database connection and providing some methods for executing the operations we need.
-- `webPush.js` - this module encapsulates the web push logic and exports a function for pushing a notification.
+**PWA**
+- Add to Home Screen for native app feel
+- Offline support with service worker
+- Push notifications (even when app is closed)
+- Notifications appear on paired smartwatches
 
+## Tech Stack
 
-### Front-end 🎨
+- **Frontend**: Vanilla JS, CSS, HTML (no build step)
+- **Backend**: Vercel Serverless Functions
+- **Database**: Supabase (PostgreSQL)
+- **Storage**: Vercel Blob (images)
+- **Push**: Web Push API with VAPID
 
-The front-end is a simple web page and it's located in the `/public` directory. It doesn't use any JS frameworks or any 3rd party libraries. The file structure is as follows:
-- `index.html` 🧩 - the entry point of the web app. It contains basic HTML body with a button for subscribing to push notifications, and a few elements for state indication.
-- `styles.css` 🎨 - stylesheet with a few styles for our elements
-- `scripts.js` ✨ - the client-side JavaScript code which is used by the web page
-- `sw.js` 🛰️ - the [service worker](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API) which will be registered and installed by the browser. It's necessary for PWA applications and its main purpose for this project is to handle push notifications.
-- `manifest.webmanifest` 📋 - basic web manifest file which is necessary for each PWA. It includes properties like the app name, theme colors, and paths to icons.
-- `/assets` 🖼️ - a folder that includes all static assets (in this case we have icons and a splash screen for iOS)
+## Vibecoded with Claude
 
-## Installation and usage ⚙️
+This entire app was vibecoded in a single session with [Claude Code](https://claude.ai/code) (Opus 4.5). From initial concept to full implementation — database schema, API endpoints, frontend UI, service worker, and all customization features — built through conversation.
 
-### Project setup 🛠️
+The codebase intentionally stays simple:
+- ~400 lines of JavaScript
+- ~350 lines of CSS
+- No React, no Next.js, no webpack
+- Just files that do what they say
 
-1. 🖥️ First you need to have Node.js installed on your system (Latest stable version is highly recommended). If you don't have it, visit [the official website](https://nodejs.org/en) and download the LTS version. During installation make sure you select the option to install the `npm` package manager too.
+## Setup
 
-2. Open the project directory with your IDE or the command-line and run `npm install` to install all the packages needed by the Node server.
+### 1. Create Supabase Project
 
-3. Now you need to add your environment variables. Create an `.env` file in the root directory and copy the content from `.env.example`. If you prefer a different port than `8080` just change the variable in the `.env` file. The other 2 variables are for the VAPID keys which are the next thing you need:
+1. Go to [supabase.com](https://supabase.com) and create a project
+2. Run `supabase-schema.sql` in the SQL Editor
+3. Copy your Project URL and `anon` key from Settings > API
 
-    - 🔐 You need a pair of VAPID keys which are necessary for the push service to identify your application. The keys must be unique and follow specific requirements, so the easiest way to generate them is by using the `web-push` library included as a dependency. Run the predefined npm script `npm run vapid-keys` and you'll see the generated keys in your console output.
-    - Copy the private key and assign it to the `VAPID_PRIVATE_KEY` env variable. Keep this key secret and avoid exposing it publicly.
-    - Copy the public key and assign it to the `VAPID_PUBLIC_KEY` env variable.
-    - While keeping the public key in the clipboard, open the client-side script (`/public/scripts.js`) and assign the key as a string to the `applicationServerKey` constant at the top of the file (replace the `<public-vapid-key>` placeholder).
-    - The `apiPort` constant below is for the port of the server so the web app can send subscription requests. Set the correct port there.
+### 2. Generate VAPID Keys
 
-4. You are good to go!
-
-▶️ Run the application by executing `npm start`. It will serve the Node server on the local host and you should see something similar in the console output:
-
-```shell
-Server is running on http://localhost:8080.
+```bash
+npm install
+npm run vapid-keys
 ```
 
-🌐 Open this URL in your browser and you should see the following page:
+Save both public and private keys.
 
-![image](https://github.com/StefanNedelchev/pwa-push-example/assets/15238282/5e171124-605c-46ff-83da-dada08658ff7)
+### 3. Create Vercel Blob Store
 
-*Note: If the service worker is not registered successfully you'll see an error message instead.*
+1. Go to your Vercel dashboard > Storage
+2. Create a new Blob store
+3. Copy the `BLOB_READ_WRITE_TOKEN`
 
-*Note: Service workers and push notifications require a secure context (HTTPS) in most browsers. Localhost is treated as a secure context for development.*
+### 4. Deploy to Vercel
 
-To subscribe for push notifications you have to click on the button and give notification permissions to the app by clicking "allow" on the pop-up that would appear.
+**Option A: One-click deploy**
 
-![image](https://github.com/StefanNedelchev/pwa-push-example/assets/15238282/526ec4ae-bad8-4f30-9f42-ecf04da6a633)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/eklekmek07/heartbeat)
 
-### Pushing a notification 📣
+**Option B: Via CLI**
 
-To push a notification you need to send a POST request to the **/send-message** endpoint of our API. You can use the `test-push.http` script from the root directory, which serves as an example. You can use it with a REST client like Postman or [the REST Client extension for VSCode](https://marketplace.visualstudio.com/items?itemName=humao.rest-client). You can modify the port and the body of the request to suit your needs. After sending a request, all subscribers should receive a push notification. The service worker also handles notification clicks and you'll see a small label appear on the UI.
+```bash
+npm i -g vercel
+vercel login
+vercel --prod
+```
 
-## Further reading 📚
+Add these environment variables in Vercel:
 
-Check out this detailed guide - https://web.dev/push-notifications-overview/
+| Variable | Description |
+|----------|-------------|
+| `VAPID_PUBLIC_KEY` | From step 2 |
+| `VAPID_PRIVATE_KEY` | From step 2 |
+| `SUPABASE_URL` | Your Supabase project URL |
+| `SUPABASE_ANON_KEY` | Your Supabase anon key |
+| `BLOB_READ_WRITE_TOKEN` | From step 3 |
+
+### 5. Local Development
+
+```bash
+cp .env.example .env.local
+# Fill in your values
+npm run dev
+```
+
+## Usage
+
+### Connect with Your Partner
+
+**Device 1:**
+1. Open the app URL
+2. Add to Home Screen (for notifications)
+3. Tap "Create New Pair"
+4. Share the 6-digit code
+
+**Device 2:**
+1. Open the same URL
+2. Add to Home Screen
+3. Tap "Join with Code"
+4. Enter the code
+5. Allow notifications
+
+### Sending Messages
+
+| Button | Notification |
+|--------|--------------|
+| ❤️ Love | "Sending you love! 💕" |
+| 👋 Wave | "Hey you! 👋" |
+| 😘 Kiss | "Sending kisses! 💋" |
+| 🔥 Fire | "Thinking of you! 🔥" |
+| 📷 Photo | Opens camera/gallery |
+
+### Personalization
+
+Go to **Settings** to:
+- Set your display name (shows in partner's notifications)
+- Upload a shared background image
+- Reset pairing
+
+## Project Structure
+
+```
+/api                     Vercel serverless functions
+  ├── create-pair.js     Generate pair code
+  ├── join-pair.js       Join existing pair
+  ├── subscribe.js       Save push subscription
+  ├── send-tap.js        Send emotion notification
+  ├── send-image.js      Send photo notification
+  ├── preferences.js     Get/update user preferences
+  ├── upload-image.js    Upload to Vercel Blob
+  ├── history.js         Get message history
+  ├── pair-status.js     Check connection status
+  └── vapid-key.js       Get public VAPID key
+
+/lib                     Shared utilities
+  ├── supabase.js        Supabase client
+  └── webpush.js         Web Push helper
+
+/public                  Static frontend
+  ├── index.html         Single page app
+  ├── scripts.js         All app logic
+  ├── styles.css         All styles
+  ├── sw.js              Service worker
+  └── assets/            Icons and images
+```
+
+## Troubleshooting
+
+**Notifications not working on iOS**
+- Must be added to Home Screen
+- Open from Home Screen icon (not Safari)
+- Check Settings > Notifications > HeartBeat
+
+**Partner shows "not connected"**
+- Both need notification permissions granted
+- Try "Reset Pairing" on both devices and reconnect
+
+**Background image not showing**
+- Check that `BLOB_READ_WRITE_TOKEN` is set in Vercel
+- Image uploads require the Vercel Blob store
+
+## License
+
+MIT
+
+## Credits
+
+- Vibecoded with [Claude Code](https://claude.ai/code) by Anthropic
+- Original PWA push concept inspired by [pwa-push-example](https://github.com/nicola-nicolo/pwa-push-example)

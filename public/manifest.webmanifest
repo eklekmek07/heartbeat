@@ -1,9 +1,11 @@
 {
-  "name": "PWA Starter",
-  "short_name": "PWA Starter",
-  "theme_color": "#de411b",
-  "background_color": "#ffffff",
+  "name": "HeartBeat",
+  "short_name": "HeartBeat",
+  "description": "Send instant 'thinking of you' notifications to your partner",
+  "theme_color": "#e91e63",
+  "background_color": "#fce4ec",
   "display": "standalone",
+  "orientation": "portrait",
   "scope": "/",
   "start_url": "/",
   "icons": [
