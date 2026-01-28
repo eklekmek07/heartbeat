@@ -41,37 +41,57 @@ const API_BASE = '';
 
 // Initialize app
 async function init() {
+  console.log('[HeartBeat] init() started');
+
   // Check for existing pairing
   pairId = localStorage.getItem('heartbeat_pair_id');
   pairCode = localStorage.getItem('heartbeat_pair_code');
+  console.log('[HeartBeat] Stored pairing:', { pairId, pairCode });
 
   // Fetch VAPID public key
   try {
+    console.log('[HeartBeat] Fetching VAPID key...');
     const response = await fetch(`${API_BASE}/api/vapid-key`);
     const data = await response.json();
     vapidPublicKey = data.vapidPublicKey;
+    console.log('[HeartBeat] VAPID key fetched:', vapidPublicKey ? 'OK' : 'MISSING');
   } catch (err) {
-    console.error('Failed to fetch VAPID key:', err);
+    console.error('[HeartBeat] Failed to fetch VAPID key:', err);
   }
 
   // Register service worker
   if ('serviceWorker' in navigator) {
     try {
-      await navigator.serviceWorker.register('sw.js');
+      console.log('[HeartBeat] Registering service worker...');
+      const reg = await navigator.serviceWorker.register('sw.js');
+      console.log('[HeartBeat] Service worker registered:', reg.scope);
       navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
     } catch (err) {
-      console.error('Service worker registration failed:', err);
+      console.error('[HeartBeat] Service worker registration failed:', err);
     }
+  } else {
+    console.log('[HeartBeat] Service workers not supported');
   }
+
+  // Check notification support
+  console.log('[HeartBeat] Notification support:', {
+    supported: 'Notification' in window,
+    permission: 'Notification' in window ? Notification.permission : 'N/A',
+    pushManager: 'PushManager' in window
+  });
 
   // Show appropriate screen
   if (pairId) {
+    console.log('[HeartBeat] Existing pair found, showing main screen');
     showMainScreen();
     // Load preferences after showing main screen
     loadPreferences();
   } else {
+    console.log('[HeartBeat] No existing pair, showing pairing screen');
     showPairingScreen();
   }
+
+  console.log('[HeartBeat] init() completed');
 }
 
 // Screen Management
@@ -236,23 +256,37 @@ function showJoinError(message) {
 
 // Push Subscription
 async function subscribeToPush() {
-  if (!vapidPublicKey || !pairId) return;
+  console.log('[HeartBeat] subscribeToPush called', { vapidPublicKey: !!vapidPublicKey, pairId });
+
+  if (!vapidPublicKey || !pairId) {
+    console.log('[HeartBeat] subscribeToPush: Missing vapidPublicKey or pairId, aborting');
+    return;
+  }
 
   try {
+    console.log('[HeartBeat] Requesting notification permission...');
     const permission = await requestNotificationPermission();
+    console.log('[HeartBeat] Notification permission:', permission);
+
     if (permission !== 'granted') {
+      console.log('[HeartBeat] Permission not granted, aborting subscription');
       updateNotificationStatus();
       return;
     }
 
+    console.log('[HeartBeat] Waiting for service worker to be ready...');
     const registration = await navigator.serviceWorker.ready;
+    console.log('[HeartBeat] Service worker ready, subscribing to push...');
+
     pushSubscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
     });
+    console.log('[HeartBeat] Push subscription created:', pushSubscription.endpoint.substring(0, 50) + '...');
 
     // Send to server
-    await fetch(`${API_BASE}/api/subscribe`, {
+    console.log('[HeartBeat] Sending subscription to server...');
+    const response = await fetch(`${API_BASE}/api/subscribe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -261,9 +295,13 @@ async function subscribeToPush() {
       })
     });
 
+    const result = await response.json();
+    console.log('[HeartBeat] Server response:', response.status, result);
+
     updateNotificationStatus();
+    console.log('[HeartBeat] subscribeToPush completed successfully');
   } catch (err) {
-    console.error('Failed to subscribe to push:', err);
+    console.error('[HeartBeat] Failed to subscribe to push:', err);
   }
 }
 
