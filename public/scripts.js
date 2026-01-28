@@ -276,10 +276,16 @@ async function subscribeToPush() {
 
     console.log('[HeartBeat] Waiting for service worker to be ready...');
     const registration = await navigator.serviceWorker.ready;
-    console.log('[HeartBeat] Service worker ready, subscribing to push...');
+    console.log('[HeartBeat] Service worker ready', {
+      active: registration.active?.state,
+      waiting: registration.waiting?.state,
+      installing: registration.installing?.state,
+      scope: registration.scope
+    });
 
     try {
       // Check existing subscription first
+      console.log('[HeartBeat] Checking for existing subscription...');
       const existingSub = await registration.pushManager.getSubscription();
       console.log('[HeartBeat] Existing subscription:', existingSub ? 'found' : 'none');
 
@@ -288,15 +294,29 @@ async function subscribeToPush() {
         console.log('[HeartBeat] Using existing push subscription');
       } else {
         console.log('[HeartBeat] Creating new push subscription with VAPID key:', vapidPublicKey.substring(0, 20) + '...');
-        pushSubscription = await registration.pushManager.subscribe({
+
+        // Convert VAPID key
+        const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
+        console.log('[HeartBeat] VAPID key converted, length:', applicationServerKey.length);
+
+        // Subscribe with timeout
+        const subscribePromise = registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+          applicationServerKey: applicationServerKey
         });
+
+        // Add a 10 second timeout
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Subscribe timeout after 10s')), 10000);
+        });
+
+        console.log('[HeartBeat] Calling pushManager.subscribe()...');
+        pushSubscription = await Promise.race([subscribePromise, timeoutPromise]);
         console.log('[HeartBeat] New push subscription created');
       }
       console.log('[HeartBeat] Push subscription endpoint:', pushSubscription.endpoint.substring(0, 50) + '...');
     } catch (subscribeError) {
-      console.error('[HeartBeat] pushManager.subscribe() failed:', subscribeError.name, subscribeError.message);
+      console.error('[HeartBeat] pushManager.subscribe() failed:', subscribeError.name, subscribeError.message, subscribeError);
       throw subscribeError;
     }
 
