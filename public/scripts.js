@@ -10,6 +10,7 @@ let currentScreen = 'main';
 let historyOffset = 0;
 let historyHasMore = true;
 let isLoadingHistory = false;
+let subscribeInFlight = null;
 
 // DOM Elements
 const screenPairing = document.getElementById('screen-pairing');
@@ -256,44 +257,73 @@ function showJoinError(message) {
 
 // Push Subscription
 async function subscribeToPush() {
-  console.log('[HeartBeat] subscribeToPush called', { vapidPublicKey: !!vapidPublicKey, pairId });
-
-  if (!vapidPublicKey || !pairId) {
-    console.log('[HeartBeat] subscribeToPush: Missing vapidPublicKey or pairId, aborting');
-    return;
+  if (subscribeInFlight) {
+    console.log('[HeartBeat] subscribeToPush already in flight');
+    return subscribeInFlight;
   }
 
-  try {
-    console.log('[HeartBeat] Requesting notification permission...');
-    const permission = await requestNotificationPermission();
-    console.log('[HeartBeat] Notification permission:', permission);
+  subscribeInFlight = (async () => {
+    console.log('[HeartBeat] subscribeToPush called', { vapidPublicKey: !!vapidPublicKey, pairId });
 
-    if (permission !== 'granted') {
-      console.log('[HeartBeat] Permission not granted, aborting subscription');
+    if (!vapidPublicKey || !pairId) {
+      console.log('[HeartBeat] subscribeToPush: Missing vapidPublicKey or pairId, aborting');
+      return;
+    }
+
+    if (!('serviceWorker' in navigator)) {
+      console.log('[HeartBeat] Service workers not supported, aborting subscription');
       updateNotificationStatus();
       return;
     }
 
-    console.log('[HeartBeat] Waiting for service worker to be ready...');
-    const registration = await navigator.serviceWorker.ready;
-    console.log('[HeartBeat] Service worker ready', {
-      active: registration.active?.state,
-      waiting: registration.waiting?.state,
-      installing: registration.installing?.state,
-      scope: registration.scope,
-      controller: navigator.serviceWorker.controller ? 'yes' : 'no'
-    });
-
-    // If no controller, the page needs to reload for SW to take control
-    if (!navigator.serviceWorker.controller) {
-      console.log('[HeartBeat] No controller - reloading page for SW to take control...');
-      // Small delay to let SW activate fully
-      await new Promise(r => setTimeout(r, 500));
-      window.location.reload();
+    if (!('PushManager' in window)) {
+      console.log('[HeartBeat] PushManager not supported, aborting subscription');
+      updateNotificationStatus();
       return;
     }
 
     try {
+      console.log('[HeartBeat] Requesting notification permission...');
+      const permission = await requestNotificationPermission();
+      console.log('[HeartBeat] Notification permission:', permission);
+
+      if (permission !== 'granted') {
+        console.log('[HeartBeat] Permission not granted, aborting subscription');
+        updateNotificationStatus();
+        return;
+      }
+
+      console.log('[HeartBeat] Waiting for service worker to be ready...');
+      const registration = await navigator.serviceWorker.ready;
+      console.log('[HeartBeat] Service worker ready', {
+        active: registration.active?.state,
+        waiting: registration.waiting?.state,
+        installing: registration.installing?.state,
+        scope: registration.scope,
+        controller: navigator.serviceWorker.controller ? 'yes' : 'no'
+      });
+
+      if (!navigator.serviceWorker.controller) {
+        console.log('[HeartBeat] No controller, waiting for controllerchange...');
+        const hasController = await waitForServiceWorkerController(3000);
+        console.log('[HeartBeat] Controller status after wait:', hasController ? 'yes' : 'no');
+        const reloadKey = 'heartbeat_sw_reload_attempted';
+
+        if (!hasController) {
+          if (!sessionStorage.getItem(reloadKey)) {
+            sessionStorage.setItem(reloadKey, '1');
+            console.log('[HeartBeat] Reloading page for SW to take control...');
+            window.location.reload();
+            return;
+          }
+          console.log('[HeartBeat] Reload already attempted, continuing without controller');
+        } else {
+          sessionStorage.removeItem(reloadKey);
+        }
+      } else {
+        sessionStorage.removeItem('heartbeat_sw_reload_attempted');
+      }
+
       // Check existing subscription first
       console.log('[HeartBeat] Checking for existing subscription...');
       const existingSub = await registration.pushManager.getSubscription();
@@ -309,45 +339,55 @@ async function subscribeToPush() {
         const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
         console.log('[HeartBeat] VAPID key converted, length:', applicationServerKey.length);
 
-        // Subscribe with timeout
-        const subscribePromise = registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: applicationServerKey
-        });
-
-        // Add a 10 second timeout
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Subscribe timeout after 10s')), 10000);
-        });
-
         console.log('[HeartBeat] Calling pushManager.subscribe()...');
-        pushSubscription = await Promise.race([subscribePromise, timeoutPromise]);
-        console.log('[HeartBeat] New push subscription created');
+        try {
+          pushSubscription = await subscribeWithTimeout(registration, applicationServerKey, 30000);
+          console.log('[HeartBeat] New push subscription created');
+        } catch (subscribeError) {
+          console.error('[HeartBeat] pushManager.subscribe() failed:', subscribeError.name, subscribeError.message, subscribeError);
+
+          if (subscribeError.name === 'TimeoutError') {
+            console.log('[HeartBeat] Checking for subscription after timeout...');
+            const recoveredSub = await registration.pushManager.getSubscription();
+            if (recoveredSub) {
+              pushSubscription = recoveredSub;
+              console.log('[HeartBeat] Recovered subscription after timeout');
+            } else {
+              throw subscribeError;
+            }
+          } else {
+            throw subscribeError;
+          }
+        }
       }
+
       console.log('[HeartBeat] Push subscription endpoint:', pushSubscription.endpoint.substring(0, 50) + '...');
-    } catch (subscribeError) {
-      console.error('[HeartBeat] pushManager.subscribe() failed:', subscribeError.name, subscribeError.message, subscribeError);
-      throw subscribeError;
+
+      // Send to server
+      console.log('[HeartBeat] Sending subscription to server...');
+      const response = await fetch(`${API_BASE}/api/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscription: pushSubscription.toJSON(),
+          pairId: pairId
+        })
+      });
+
+      const result = await response.json();
+      console.log('[HeartBeat] Server response:', response.status, result);
+
+      updateNotificationStatus();
+      console.log('[HeartBeat] subscribeToPush completed successfully');
+    } catch (err) {
+      console.error('[HeartBeat] Failed to subscribe to push:', err);
     }
+  })();
 
-    // Send to server
-    console.log('[HeartBeat] Sending subscription to server...');
-    const response = await fetch(`${API_BASE}/api/subscribe`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        subscription: pushSubscription.toJSON(),
-        pairId: pairId
-      })
-    });
-
-    const result = await response.json();
-    console.log('[HeartBeat] Server response:', response.status, result);
-
-    updateNotificationStatus();
-    console.log('[HeartBeat] subscribeToPush completed successfully');
-  } catch (err) {
-    console.error('[HeartBeat] Failed to subscribe to push:', err);
+  try {
+    return await subscribeInFlight;
+  } finally {
+    subscribeInFlight = null;
   }
 }
 
@@ -373,6 +413,57 @@ function updateNotificationStatus() {
     notificationStatus.classList.add('hidden');
   } else {
     notificationStatus.classList.remove('hidden');
+  }
+}
+
+function waitForServiceWorkerController(timeoutMs = 3000) {
+  if (navigator.serviceWorker.controller) {
+    return Promise.resolve(true);
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+
+    const cleanup = () => {
+      if (settled) return;
+      settled = true;
+      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+      clearTimeout(timerId);
+    };
+
+    const onControllerChange = () => {
+      cleanup();
+      resolve(true);
+    };
+
+    const timerId = setTimeout(() => {
+      cleanup();
+      resolve(false);
+    }, timeoutMs);
+
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+  });
+}
+
+async function subscribeWithTimeout(registration, applicationServerKey, timeoutMs = 30000) {
+  const timeoutError = new Error(`Subscribe timeout after ${Math.round(timeoutMs / 1000)}s`);
+  timeoutError.name = 'TimeoutError';
+
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(timeoutError), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([
+      registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: applicationServerKey
+      }),
+      timeoutPromise
+    ]);
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
