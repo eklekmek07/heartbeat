@@ -1,146 +1,759 @@
-const APPLICATION_SERVER_KEY = '<public-vapid-key>';
-const API_PORT = 8080;
-const SUBSCRIPTION_POLL_MS = 1000;
-const NOTIFICATION_CLICK_MESSAGE = 'notification-clicked';
+// HeartBeat - PWA Scripts
 
-const swInfoEl = document.getElementById('sw_info');
-const subInfoEl = document.getElementById('sub_info');
-const btnSubEl = document.getElementById('btn_sub');
+// State
+let vapidPublicKey = null;
+let pairId = null;
+let pairCode = null;
+let pushSubscription = null;
+let statusPollInterval = null;
+let currentScreen = 'main';
+let historyOffset = 0;
+let historyHasMore = true;
+let isLoadingHistory = false;
 
-function setSwInfo(type, text) {
-  swInfoEl.className = `alert ${type}`;
-  swInfoEl.textContent = text;
-}
+// DOM Elements
+const screenPairing = document.getElementById('screen-pairing');
+const screenMain = document.getElementById('screen-main');
+const screenHistory = document.getElementById('screen-history');
+const screenSettings = document.getElementById('screen-settings');
+const bottomNav = document.getElementById('bottom-nav');
+const pairingChoice = document.getElementById('pairing-choice');
+const pairingCreate = document.getElementById('pairing-create');
+const pairingJoin = document.getElementById('pairing-join');
+const pairCodeDisplay = document.getElementById('pair-code-display');
+const waitingStatus = document.getElementById('waiting-status');
+const joinCodeInput = document.getElementById('join-code-input');
+const joinError = document.getElementById('join-error');
+const connectionStatus = document.getElementById('connection-status');
+const statusDot = connectionStatus.querySelector('.status-dot');
+const statusText = document.getElementById('status-text');
+const tapFeedback = document.getElementById('tap-feedback');
+const notificationStatus = document.getElementById('notification-status');
+const displayNameInput = document.getElementById('display-name-input');
+const backgroundPreview = document.getElementById('background-preview');
+const historyList = document.getElementById('history-list');
+const historyLoading = document.getElementById('history-loading');
+const imageViewer = document.getElementById('image-viewer');
+const imageViewerImg = document.getElementById('image-viewer-img');
 
-function setSubInfo(text) {
-  subInfoEl.textContent = text;
-}
+// API base URL (empty for same origin on Vercel)
+const API_BASE = '';
 
-function setSubButtonDisabled(isDisabled) {
-  if (isDisabled) {
-    btnSubEl.setAttribute('disabled', 'disabled');
+// Initialize app
+async function init() {
+  // Check for existing pairing
+  pairId = localStorage.getItem('heartbeat_pair_id');
+  pairCode = localStorage.getItem('heartbeat_pair_code');
+
+  // Fetch VAPID public key
+  try {
+    const response = await fetch(`${API_BASE}/api/vapid-key`);
+    const data = await response.json();
+    vapidPublicKey = data.vapidPublicKey;
+  } catch (err) {
+    console.error('Failed to fetch VAPID key:', err);
+  }
+
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    try {
+      await navigator.serviceWorker.register('sw.js');
+      navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+    } catch (err) {
+      console.error('Service worker registration failed:', err);
+    }
+  }
+
+  // Show appropriate screen
+  if (pairId) {
+    showMainScreen();
+    // Load preferences after showing main screen
+    loadPreferences();
   } else {
-    btnSubEl.removeAttribute('disabled');
+    showPairingScreen();
   }
 }
 
-function handleDeniedNotifications() {
-  setSubInfo('🔕 Notifications have been disabled!');
-  setSubButtonDisabled(true);
+// Screen Management
+function showPairingScreen() {
+  screenPairing.classList.remove('hidden');
+  screenMain.classList.add('hidden');
+  showPairingChoice();
 }
 
-function isNotificationDenied() {
-  return window.Notification.permission === 'denied';
+function showMainScreen() {
+  screenPairing.classList.add('hidden');
+  screenMain.classList.remove('hidden');
+  screenHistory.classList.add('hidden');
+  screenSettings.classList.add('hidden');
+  bottomNav.classList.remove('hidden');
+  currentScreen = 'main';
+  updateNavActiveState();
+
+  // Check notification status
+  updateNotificationStatus();
+
+  // Subscribe to push if not already
+  subscribeToPush();
+
+  // Start polling for partner status
+  checkPairStatus();
+  startStatusPolling();
 }
 
-async function hasSubscription() {
-  const registration = await navigator.serviceWorker.ready;
-  const subscription = await registration.pushManager.getSubscription();
+// Screen Navigation
+function switchScreen(screen) {
+  currentScreen = screen;
+  screenMain.classList.add('hidden');
+  screenHistory.classList.add('hidden');
+  screenSettings.classList.add('hidden');
 
-  if (subscription) {
-    setSubInfo('✅ You are already subscribed to notifications!');
-    return true;
+  switch (screen) {
+    case 'main':
+      screenMain.classList.remove('hidden');
+      break;
+    case 'history':
+      screenHistory.classList.remove('hidden');
+      loadHistory(true);
+      break;
+    case 'settings':
+      screenSettings.classList.remove('hidden');
+      break;
   }
 
-  return false;
+  updateNavActiveState();
 }
 
-async function pollSubscriptionStatus() {
-  const registration = await navigator.serviceWorker.ready;
-
-  setInterval(async () => {
-    // Keep UI in sync if the user removes a subscription elsewhere.
-    const subscription = await registration.pushManager.getSubscription();
-    if (subscription) {
-      return;
+function updateNavActiveState() {
+  const navItems = bottomNav.querySelectorAll('.nav-item');
+  navItems.forEach(item => {
+    if (item.dataset.screen === currentScreen) {
+      item.classList.add('active');
+    } else {
+      item.classList.remove('active');
     }
-
-    setSubInfo('');
-
-    if (isNotificationDenied()) {
-      handleDeniedNotifications();
-      return;
-    }
-
-    setSubButtonDisabled(false);
-  }, SUBSCRIPTION_POLL_MS);
+  });
 }
 
-function handleServiceWorkerMessage(event) {
-  if (!event.data || event.data.message !== NOTIFICATION_CLICK_MESSAGE) {
-    // Ignore missing or unknown messages
+function showPairingChoice() {
+  pairingChoice.classList.remove('hidden');
+  pairingCreate.classList.add('hidden');
+  pairingJoin.classList.add('hidden');
+  stopStatusPolling();
+}
+
+async function showCreatePair() {
+  pairingChoice.classList.add('hidden');
+  pairingCreate.classList.remove('hidden');
+  pairingJoin.classList.add('hidden');
+
+  pairCodeDisplay.textContent = '------';
+  waitingStatus.classList.remove('hidden');
+
+  try {
+    const response = await fetch(`${API_BASE}/api/create-pair`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    const data = await response.json();
+
+    if (data.pairId && data.pairCode) {
+      pairId = data.pairId;
+      pairCode = data.pairCode;
+      localStorage.setItem('heartbeat_pair_id', pairId);
+      localStorage.setItem('heartbeat_pair_code', pairCode);
+
+      pairCodeDisplay.textContent = pairCode;
+
+      // Subscribe to push
+      await subscribeToPush();
+
+      // Start polling for partner
+      startStatusPolling();
+    } else {
+      pairCodeDisplay.textContent = 'Error';
+    }
+  } catch (err) {
+    console.error('Failed to create pair:', err);
+    pairCodeDisplay.textContent = 'Error';
+  }
+}
+
+function showJoinPair() {
+  pairingChoice.classList.add('hidden');
+  pairingCreate.classList.add('hidden');
+  pairingJoin.classList.remove('hidden');
+
+  joinCodeInput.value = '';
+  joinError.classList.add('hidden');
+  joinCodeInput.focus();
+}
+
+async function joinPair() {
+  const code = joinCodeInput.value.trim();
+
+  if (code.length !== 6) {
+    showJoinError('Please enter a 6-digit code');
     return;
   }
 
-  setSubInfo('🖱️ The notification was clicked!');
-  setTimeout(() => {
-    setSubInfo('');
-  }, 5000);
+  joinError.classList.add('hidden');
+
+  try {
+    const response = await fetch(`${API_BASE}/api/join-pair`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pairCode: code })
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.pairId) {
+      pairId = data.pairId;
+      pairCode = data.pairCode;
+      localStorage.setItem('heartbeat_pair_id', pairId);
+      localStorage.setItem('heartbeat_pair_code', pairCode);
+
+      // Subscribe to push
+      await subscribeToPush();
+
+      // Go to main screen
+      showMainScreen();
+    } else {
+      showJoinError(data.error || 'Invalid code');
+    }
+  } catch (err) {
+    console.error('Failed to join pair:', err);
+    showJoinError('Connection failed');
+  }
 }
 
-async function requestPermission() {
+function showJoinError(message) {
+  joinError.textContent = message;
+  joinError.classList.remove('hidden');
+}
+
+// Push Subscription
+async function subscribeToPush() {
+  if (!vapidPublicKey || !pairId) return;
+
+  try {
+    const permission = await requestNotificationPermission();
+    if (permission !== 'granted') {
+      updateNotificationStatus();
+      return;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    pushSubscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+    });
+
+    // Send to server
+    await fetch(`${API_BASE}/api/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subscription: pushSubscription.toJSON(),
+        pairId: pairId
+      })
+    });
+
+    updateNotificationStatus();
+  } catch (err) {
+    console.error('Failed to subscribe to push:', err);
+  }
+}
+
+async function requestNotificationPermission() {
   if (!('Notification' in window)) {
-    throw new Error('Notifications not supported!');
+    return 'denied';
   }
 
-  if (window.Notification.permission === 'default') {
-    // Prompt only when the user hasn't decided yet.
-    return window.Notification.requestPermission();
+  if (Notification.permission === 'default') {
+    return await Notification.requestPermission();
   }
 
-  return window.Notification.permission;
+  return Notification.permission;
 }
 
-async function subscribeToNotifications() {
-  const permission = await requestPermission();
-  if (permission === 'denied') {
-    handleDeniedNotifications();
+function updateNotificationStatus() {
+  if (!('Notification' in window)) {
+    notificationStatus.classList.remove('hidden');
     return;
   }
 
-  if (await hasSubscription()) {
-    return;
-  }
-
-  const registration = await navigator.serviceWorker.ready;
-  const pushSubscription = await registration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: APPLICATION_SERVER_KEY,
-  });
-
-  const response = await fetch(`http://localhost:${API_PORT}/subscribe`, {
-    method: 'POST',
-    body: JSON.stringify(pushSubscription.toJSON()),
-    headers: {
-      'content-type': 'application/json',
-    },
-  });
-
-  const { message } = await response.json();
-  setSubInfo(message);
-}
-
-function initServiceWorker() {
-  if (!('serviceWorker' in navigator)) {
-    setSwInfo('error', '📵 Service Worker is not supported by your browser 🙁');
-    return;
-  }
-
-  setSwInfo('info', '⚙️ Registering service worker...');
-
-  if (isNotificationDenied()) {
-    handleDeniedNotifications();
+  if (Notification.permission === 'granted') {
+    notificationStatus.classList.add('hidden');
   } else {
-    // Update UI early if a subscription already exists.
-    hasSubscription();
+    notificationStatus.classList.remove('hidden');
+  }
+}
+
+// Status Polling
+function startStatusPolling() {
+  stopStatusPolling();
+  statusPollInterval = setInterval(checkPairStatus, 5000);
+}
+
+function stopStatusPolling() {
+  if (statusPollInterval) {
+    clearInterval(statusPollInterval);
+    statusPollInterval = null;
+  }
+}
+
+async function checkPairStatus() {
+  if (!pairId) return;
+
+  try {
+    const response = await fetch(`${API_BASE}/api/pair-status?pairId=${pairId}`);
+    const data = await response.json();
+
+    if (data.partnerConnected) {
+      statusDot.className = 'status-dot connected';
+      statusText.textContent = 'Connected to partner';
+
+      // If on pairing screen, move to main screen
+      if (!screenMain.classList.contains('hidden') === false) {
+        showMainScreen();
+      }
+    } else if (data.deviceCount === 1) {
+      statusDot.className = 'status-dot waiting';
+      statusText.textContent = 'Waiting for partner...';
+    } else {
+      statusDot.className = 'status-dot';
+      statusText.textContent = 'Not connected';
+    }
+  } catch (err) {
+    console.error('Failed to check pair status:', err);
+  }
+}
+
+// Send Tap
+async function sendTap(emotion) {
+  if (!pairId) return;
+
+  const button = document.querySelector(`[data-emotion="${emotion}"]`);
+  button.classList.add('sending');
+
+  try {
+    const subscription = pushSubscription ? pushSubscription.toJSON() : null;
+
+    const response = await fetch(`${API_BASE}/api/send-tap`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pairId: pairId,
+        emotion: emotion,
+        senderEndpoint: subscription?.endpoint || ''
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.sent > 0) {
+      showFeedback('Sent! 💕', 'success');
+    } else {
+      showFeedback('Partner not connected', 'error');
+    }
+  } catch (err) {
+    console.error('Failed to send tap:', err);
+    showFeedback('Failed to send', 'error');
   }
 
-  pollSubscriptionStatus();
+  setTimeout(() => button.classList.remove('sending'), 500);
+}
 
-  navigator.serviceWorker.register('sw.js').then(() => {
-    setSwInfo('success', 'Service Worker has been registered successfully 🙂');
-    navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+function showFeedback(message, type) {
+  tapFeedback.textContent = message;
+  tapFeedback.className = `feedback ${type}`;
+
+  setTimeout(() => {
+    tapFeedback.classList.add('hidden');
+  }, 2000);
+}
+
+// Reset Pairing
+function resetPairing() {
+  if (confirm('Are you sure you want to disconnect?')) {
+    localStorage.removeItem('heartbeat_pair_id');
+    localStorage.removeItem('heartbeat_pair_code');
+    pairId = null;
+    pairCode = null;
+    pushSubscription = null;
+    stopStatusPolling();
+    // Reset background
+    document.body.classList.remove('has-custom-bg');
+    document.body.style.setProperty('--custom-bg', 'none');
+    bottomNav.classList.add('hidden');
+    showPairingScreen();
+  }
+}
+
+// Service Worker Message Handler
+function handleServiceWorkerMessage(event) {
+  if (event.data?.message === 'notification-clicked') {
+    // If it's an image notification, open the image viewer
+    if (event.data.data?.type === 'image' && event.data.data?.imageUrl) {
+      openImageViewer(event.data.data.imageUrl);
+    }
+  }
+}
+
+// Preferences
+async function loadPreferences() {
+  if (!pairId || !pushSubscription) return;
+
+  try {
+    const endpoint = pushSubscription.toJSON().endpoint;
+    const response = await fetch(`${API_BASE}/api/preferences?pairId=${pairId}&endpoint=${encodeURIComponent(endpoint)}`);
+    const data = await response.json();
+
+    // Set display name
+    if (data.displayName) {
+      displayNameInput.value = data.displayName;
+    }
+
+    // Set background
+    if (data.backgroundUrl) {
+      applyBackground(data.backgroundUrl);
+    }
+  } catch (err) {
+    console.error('Failed to load preferences:', err);
+  }
+}
+
+async function saveDisplayName() {
+  if (!pairId || !pushSubscription) {
+    showFeedback('Not connected', 'error');
+    return;
+  }
+
+  const displayName = displayNameInput.value.trim();
+  if (!displayName) {
+    showFeedback('Please enter a name', 'error');
+    return;
+  }
+
+  try {
+    const endpoint = pushSubscription.toJSON().endpoint;
+    const response = await fetch(`${API_BASE}/api/preferences`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pairId: pairId,
+        endpoint: endpoint,
+        displayName: displayName
+      })
+    });
+
+    if (response.ok) {
+      showFeedback('Name saved!', 'success');
+    } else {
+      showFeedback('Failed to save', 'error');
+    }
+  } catch (err) {
+    console.error('Failed to save display name:', err);
+    showFeedback('Failed to save', 'error');
+  }
+}
+
+function applyBackground(url) {
+  if (url) {
+    document.body.style.setProperty('--custom-bg', `url(${url})`);
+    document.body.classList.add('has-custom-bg');
+    backgroundPreview.innerHTML = `<img src="${url}" alt="Background">`;
+  } else {
+    document.body.style.setProperty('--custom-bg', 'none');
+    document.body.classList.remove('has-custom-bg');
+    backgroundPreview.innerHTML = '<span>No background set</span>';
+  }
+}
+
+async function handleBackgroundSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  try {
+    showFeedback('Uploading...', 'success');
+
+    // Compress image
+    const imageData = await compressImage(file, 1200, 0.8);
+
+    // Upload to server
+    const response = await fetch(`${API_BASE}/api/upload-image`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pairId: pairId,
+        imageData: imageData,
+        type: 'background'
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.url) {
+      // Save background URL to preferences
+      const endpoint = pushSubscription?.toJSON().endpoint || '';
+      await fetch(`${API_BASE}/api/preferences`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pairId: pairId,
+          endpoint: endpoint,
+          backgroundUrl: data.url
+        })
+      });
+
+      applyBackground(data.url);
+      showFeedback('Background saved!', 'success');
+    } else {
+      showFeedback('Upload failed', 'error');
+    }
+  } catch (err) {
+    console.error('Failed to upload background:', err);
+    showFeedback('Upload failed', 'error');
+  }
+
+  // Reset input
+  event.target.value = '';
+}
+
+async function removeBackground() {
+  if (!pairId) return;
+
+  try {
+    const endpoint = pushSubscription?.toJSON().endpoint || '';
+    await fetch(`${API_BASE}/api/preferences`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pairId: pairId,
+        endpoint: endpoint,
+        backgroundUrl: ''
+      })
+    });
+
+    applyBackground(null);
+    showFeedback('Background removed', 'success');
+  } catch (err) {
+    console.error('Failed to remove background:', err);
+  }
+}
+
+// Photo Sending
+function openPhotoPicker() {
+  document.getElementById('photo-input').click();
+}
+
+async function handlePhotoSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (!pairId || !pushSubscription) {
+    showFeedback('Not connected', 'error');
+    return;
+  }
+
+  try {
+    showFeedback('Sending photo...', 'success');
+
+    // Compress image
+    const imageData = await compressImage(file, 1200, 0.8);
+
+    // Upload to server
+    const uploadResponse = await fetch(`${API_BASE}/api/upload-image`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pairId: pairId,
+        imageData: imageData,
+        type: 'message'
+      })
+    });
+
+    const uploadData = await uploadResponse.json();
+
+    if (!uploadData.url) {
+      showFeedback('Upload failed', 'error');
+      return;
+    }
+
+    // Send notification to partner
+    const endpoint = pushSubscription.toJSON().endpoint;
+    const sendResponse = await fetch(`${API_BASE}/api/send-image`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pairId: pairId,
+        imageUrl: uploadData.url,
+        senderEndpoint: endpoint
+      })
+    });
+
+    const sendData = await sendResponse.json();
+
+    if (sendData.sent > 0) {
+      showFeedback('Photo sent!', 'success');
+    } else {
+      showFeedback('Partner not connected', 'error');
+    }
+  } catch (err) {
+    console.error('Failed to send photo:', err);
+    showFeedback('Failed to send', 'error');
+  }
+
+  // Reset input
+  event.target.value = '';
+}
+
+// Image compression
+function compressImage(file, maxSize, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // Scale down if needed
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = (height / width) * maxSize;
+            width = maxSize;
+          } else {
+            width = (width / height) * maxSize;
+            height = maxSize;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
   });
 }
 
-initServiceWorker();
+// History
+async function loadHistory(reset = false) {
+  if (isLoadingHistory) return;
+  if (!pairId) return;
+
+  if (reset) {
+    historyOffset = 0;
+    historyHasMore = true;
+    historyList.innerHTML = '';
+  }
+
+  if (!historyHasMore) return;
+
+  isLoadingHistory = true;
+  historyLoading.classList.remove('hidden');
+
+  try {
+    const endpoint = pushSubscription?.toJSON().endpoint || '';
+    const response = await fetch(
+      `${API_BASE}/api/history?pairId=${pairId}&endpoint=${encodeURIComponent(endpoint)}&limit=20&offset=${historyOffset}`
+    );
+    const data = await response.json();
+
+    if (data.messages && data.messages.length > 0) {
+      renderHistoryMessages(data.messages);
+      historyOffset += data.messages.length;
+      historyHasMore = data.hasMore;
+    } else if (historyOffset === 0) {
+      historyList.innerHTML = '<div class="history-empty">No messages yet</div>';
+    }
+  } catch (err) {
+    console.error('Failed to load history:', err);
+  }
+
+  isLoadingHistory = false;
+  historyLoading.classList.add('hidden');
+}
+
+function renderHistoryMessages(messages) {
+  const emotionEmojis = {
+    love: '❤️',
+    wave: '👋',
+    kiss: '😘',
+    fire: '🔥'
+  };
+
+  for (const msg of messages) {
+    const item = document.createElement('div');
+    item.className = `history-item ${msg.isMine ? 'mine' : 'theirs'}`;
+
+    let contentHtml = '';
+    if (msg.type === 'emotion') {
+      contentHtml = `<span class="history-item-emoji">${emotionEmojis[msg.emotion] || '💕'}</span>`;
+    } else if (msg.type === 'image' && msg.imageUrl) {
+      contentHtml = `<img class="history-item-image" src="${msg.imageUrl}" alt="Photo" onclick="openImageViewer('${msg.imageUrl}')">`;
+    }
+
+    const time = new Date(msg.createdAt).toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const sender = msg.isMine ? 'You' : (msg.senderName || 'Partner');
+
+    item.innerHTML = `
+      <div class="history-item-content">${contentHtml}</div>
+      <div class="history-item-meta">
+        <span class="history-item-sender">${sender}</span>
+        <span class="history-item-time">${time}</span>
+      </div>
+    `;
+
+    historyList.appendChild(item);
+  }
+}
+
+// Image Viewer
+function openImageViewer(url) {
+  imageViewerImg.src = url;
+  imageViewer.classList.remove('hidden');
+}
+
+function closeImageViewer() {
+  imageViewer.classList.add('hidden');
+  imageViewerImg.src = '';
+}
+
+// Utility Functions
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+
+  return outputArray;
+}
+
+// Initialize on load
+init();

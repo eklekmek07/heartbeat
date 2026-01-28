@@ -1,50 +1,199 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="description" content="PWA test with minimal required implementation">
+    <meta name="description" content="HeartBeat - Send instant 'thinking of you' notifications to your partner">
 
-    <!-- -------------------------- iOS tags -------------------------- -->
-    <!-- add to homescreen for ios -->
+    <!-- iOS tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <!-- status bar style for ios -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <!-- theme color for ios -->
-    <meta name="theme-color" content="#de411b">
-    <!-- apple touch icon for ios -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#e91e63">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/icon-apple-touch.png">
-    <!-- apple touch splash screen for ios -->
     <link rel="apple-touch-startup-image"
       media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)"
       href="assets/splashes/splash-1242x2208.png">
-    <!-- -------------------------------------------------------------- -->
 
-    <!-- favicon for browser tabs -->
     <link rel="icon" type="image/png" href="assets/icons/favicon.png">
-    <!-- web manifest -->
     <link rel="manifest" href="manifest.webmanifest">
-
     <link rel="stylesheet" href="styles.css">
 
-    <title>PWA Starter</title>
+    <title>HeartBeat</title>
   </head>
   <body>
     <nav>
-      <span>PWA Starter</span>
+      <span class="logo">💗 HeartBeat</span>
     </nav>
 
-    <div class="container">
-      <div class="alert info" id="sw_info"></div>
+    <!-- Pairing Screen -->
+    <div id="screen-pairing" class="screen">
+      <div class="container">
+        <div id="pairing-choice">
+          <h2>Connect with your partner</h2>
+          <p class="subtitle">Share instant notifications with a single tap</p>
 
-      <button type="button" id="btn_sub" onclick="subscribeToNotifications()">
-        Subscribe for notifications
-      </button>
-      <p id="sub_info"></p>
+          <div class="pairing-buttons">
+            <button type="button" class="btn-primary" onclick="showCreatePair()">
+              Create New Pair
+            </button>
+            <button type="button" class="btn-secondary" onclick="showJoinPair()">
+              Join with Code
+            </button>
+          </div>
+        </div>
+
+        <div id="pairing-create" class="hidden">
+          <h2>Your Pair Code</h2>
+          <p class="subtitle">Share this code with your partner</p>
+
+          <div class="pair-code" id="pair-code-display">------</div>
+
+          <div class="status-box" id="waiting-status">
+            <span class="spinner"></span>
+            <span>Waiting for partner to join...</span>
+          </div>
+
+          <button type="button" class="btn-link" onclick="showPairingChoice()">
+            ← Back
+          </button>
+        </div>
+
+        <div id="pairing-join" class="hidden">
+          <h2>Enter Pair Code</h2>
+          <p class="subtitle">Get the 6-digit code from your partner</p>
+
+          <input type="text" id="join-code-input" maxlength="6" placeholder="000000" inputmode="numeric" pattern="[0-9]*">
+
+          <button type="button" class="btn-primary" onclick="joinPair()">
+            Connect
+          </button>
+
+          <div id="join-error" class="error-text hidden"></div>
+
+          <button type="button" class="btn-link" onclick="showPairingChoice()">
+            ← Back
+          </button>
+        </div>
+      </div>
     </div>
 
-    <noscript>Please enable JavaScript to continue using this application.</noscript>
+    <!-- Main App Screen -->
+    <div id="screen-main" class="screen hidden">
+      <div class="container main-container">
+        <div id="connection-status" class="status-box">
+          <span class="status-dot"></span>
+          <span id="status-text">Checking connection...</span>
+        </div>
+
+        <h2>Tap to send</h2>
+
+        <div class="emotion-grid">
+          <button type="button" class="emotion-btn" data-emotion="love" onclick="sendTap('love')">
+            <span class="emotion-icon">❤️</span>
+            <span class="emotion-label">Love</span>
+          </button>
+          <button type="button" class="emotion-btn" data-emotion="wave" onclick="sendTap('wave')">
+            <span class="emotion-icon">👋</span>
+            <span class="emotion-label">Wave</span>
+          </button>
+          <button type="button" class="emotion-btn" data-emotion="kiss" onclick="sendTap('kiss')">
+            <span class="emotion-icon">😘</span>
+            <span class="emotion-label">Kiss</span>
+          </button>
+          <button type="button" class="emotion-btn" data-emotion="fire" onclick="sendTap('fire')">
+            <span class="emotion-icon">🔥</span>
+            <span class="emotion-label">Fire</span>
+          </button>
+          <button type="button" class="emotion-btn emotion-btn-photo" onclick="openPhotoPicker()">
+            <span class="emotion-icon">📷</span>
+            <span class="emotion-label">Photo</span>
+          </button>
+        </div>
+
+        <input type="file" id="photo-input" accept="image/*" style="display: none;" onchange="handlePhotoSelected(event)">
+
+        <div id="tap-feedback" class="feedback hidden"></div>
+
+        <div id="notification-status" class="notification-alert hidden">
+          <span>🔔 Enable notifications to receive taps</span>
+          <button type="button" onclick="requestNotificationPermission()">Enable</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- History Screen -->
+    <div id="screen-history" class="screen hidden">
+      <div class="container main-container">
+        <h2>Message History</h2>
+        <div id="history-list" class="history-list">
+          <div class="history-empty">No messages yet</div>
+        </div>
+        <div id="history-loading" class="history-loading hidden">
+          <span class="spinner"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="screen-settings" class="screen hidden">
+      <div class="container main-container">
+        <h2>Settings</h2>
+
+        <div class="settings-form">
+          <div class="settings-group">
+            <label for="display-name-input">Your Display Name</label>
+            <p class="settings-hint">This is how your partner sees you in notifications</p>
+            <input type="text" id="display-name-input" placeholder="Enter your name" maxlength="30">
+            <button type="button" class="btn-primary btn-save-name" onclick="saveDisplayName()">Save Name</button>
+          </div>
+
+          <div class="settings-group">
+            <label>Shared Background</label>
+            <p class="settings-hint">Both you and your partner will see this background</p>
+            <div id="background-preview" class="background-preview">
+              <span>No background set</span>
+            </div>
+            <input type="file" id="background-input" accept="image/*" style="display: none;" onchange="handleBackgroundSelected(event)">
+            <div class="background-buttons">
+              <button type="button" class="btn-secondary" onclick="document.getElementById('background-input').click()">
+                Choose Image
+              </button>
+              <button type="button" class="btn-link" onclick="removeBackground()">Remove</button>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <button type="button" class="btn-link btn-reset" onclick="resetPairing()">
+              Reset Pairing
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav id="bottom-nav" class="bottom-nav hidden">
+      <button type="button" class="nav-item active" data-screen="main" onclick="switchScreen('main')">
+        <span class="nav-icon">💕</span>
+        <span class="nav-label">Send</span>
+      </button>
+      <button type="button" class="nav-item" data-screen="history" onclick="switchScreen('history')">
+        <span class="nav-icon">📜</span>
+        <span class="nav-label">History</span>
+      </button>
+      <button type="button" class="nav-item" data-screen="settings" onclick="switchScreen('settings')">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings</span>
+      </button>
+    </nav>
+
+    <!-- Image Viewer Modal -->
+    <div id="image-viewer" class="image-viewer hidden" onclick="closeImageViewer()">
+      <button type="button" class="image-viewer-close" onclick="closeImageViewer()">×</button>
+      <img id="image-viewer-img" src="" alt="Full size image">
+    </div>
+
+    <noscript>Please enable JavaScript to use HeartBeat.</noscript>
 
     <script src="scripts.js"></script>
   </body>
