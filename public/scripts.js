@@ -308,27 +308,6 @@ async function subscribeToPush() {
         controller: navigator.serviceWorker.controller ? 'yes' : 'no'
       });
 
-      if (!navigator.serviceWorker.controller) {
-        console.log('[HeartBeat] No controller, waiting for controllerchange...');
-        const hasController = await waitForServiceWorkerController(3000);
-        console.log('[HeartBeat] Controller status after wait:', hasController ? 'yes' : 'no');
-        const reloadKey = 'heartbeat_sw_reload_attempted';
-
-        if (!hasController) {
-          if (!sessionStorage.getItem(reloadKey)) {
-            sessionStorage.setItem(reloadKey, '1');
-            console.log('[HeartBeat] Reloading page for SW to take control...');
-            window.location.reload();
-            return;
-          }
-          console.log('[HeartBeat] Reload already attempted, continuing without controller');
-        } else {
-          sessionStorage.removeItem(reloadKey);
-        }
-      } else {
-        sessionStorage.removeItem('heartbeat_sw_reload_attempted');
-      }
-
       // Check existing subscription first
       console.log('[HeartBeat] Checking for existing subscription...');
       const existingSub = await registration.pushManager.getSubscription();
@@ -448,35 +427,6 @@ function updateNotificationStatus() {
   }
 
   notificationStatus.classList.add('hidden');
-}
-
-function waitForServiceWorkerController(timeoutMs = 3000) {
-  if (navigator.serviceWorker.controller) {
-    return Promise.resolve(true);
-  }
-
-  return new Promise((resolve) => {
-    let settled = false;
-
-    const cleanup = () => {
-      if (settled) return;
-      settled = true;
-      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
-      clearTimeout(timerId);
-    };
-
-    const onControllerChange = () => {
-      cleanup();
-      resolve(true);
-    };
-
-    const timerId = setTimeout(() => {
-      cleanup();
-      resolve(false);
-    }, timeoutMs);
-
-    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
-  });
 }
 
 async function subscribeWithTimeout(registration, applicationServerKey, timeoutMs = 30000) {
