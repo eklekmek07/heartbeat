@@ -131,11 +131,6 @@
         <input type="file" id="photo-input" accept="image/*" style="display: none;" onchange="handlePhotoSelected(event)">
 
         <div id="tap-feedback" class="feedback hidden"></div>
-
-        <div id="notification-status" class="notification-alert hidden">
-          <span>🔔 Bildirimleri aç ve mesaj al</span>
-          <button type="button" onclick="subscribeToPush()">Aç</button>
-        </div>
       </div>
     </div>
 
@@ -163,6 +158,15 @@
             <p class="settings-hint">Sevgilin seni bildirimlerde böyle görür</p>
             <input type="text" id="display-name-input" placeholder="Adını gir" maxlength="30">
             <button type="button" class="btn-primary btn-save-name" onclick="saveDisplayName()">Kaydet</button>
+          </div>
+
+          <div class="settings-group">
+            <label>Bildirimler</label>
+            <p class="settings-hint">Mesaj almak için bildirimleri etkinleştir</p>
+            <div id="notification-status" class="notification-alert">
+              <span>🔔 Bildirimleri aç ve mesaj al</span>
+              <button type="button" onclick="subscribeToPush()">Aç</button>
+            </div>
           </div>
 
           <div class="settings-group">

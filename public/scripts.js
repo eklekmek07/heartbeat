@@ -90,6 +90,12 @@ async function init() {
     showMainScreen();
     // Load preferences after showing main screen
     loadPreferences();
+
+    // Restore screen from URL hash
+    const hash = window.location.hash.slice(1); // Remove #
+    if (hash === 'history' || hash === 'settings') {
+      switchScreen(hash);
+    }
   } else {
     console.log('[HeartBeat] No existing pair, showing pairing screen');
     showPairingScreen();
@@ -128,6 +134,10 @@ function showMainScreen() {
 // Screen Navigation
 function switchScreen(screen) {
   currentScreen = screen;
+
+  // Update URL hash (without triggering hashchange)
+  history.replaceState(null, '', `#${screen}`);
+
   screenMain.classList.add('hidden');
   screenHistory.classList.add('hidden');
   screenSettings.classList.add('hidden');
@@ -142,6 +152,7 @@ function switchScreen(screen) {
       break;
     case 'settings':
       screenSettings.classList.remove('hidden');
+      updateNotificationStatus();
       break;
   }
 
@@ -393,7 +404,6 @@ function updateNotificationStatus() {
   if (!('Notification' in window)) {
     notificationStatusText.textContent = '🔔 Bu cihazda bildirimler desteklenmiyor';
     notificationStatusButton.classList.add('hidden');
-    notificationStatus.classList.remove('hidden');
     return;
   }
 
@@ -402,7 +412,6 @@ function updateNotificationStatus() {
     notificationStatusButton.textContent = 'Bekle';
     notificationStatusButton.disabled = true;
     notificationStatusButton.classList.remove('hidden');
-    notificationStatus.classList.remove('hidden');
     return;
   }
 
@@ -411,7 +420,6 @@ function updateNotificationStatus() {
     notificationStatusButton.textContent = 'Aç';
     notificationStatusButton.disabled = false;
     notificationStatusButton.classList.remove('hidden');
-    notificationStatus.classList.remove('hidden');
     return;
   }
 
@@ -422,11 +430,12 @@ function updateNotificationStatus() {
     notificationStatusButton.textContent = 'Tekrar Dene';
     notificationStatusButton.disabled = false;
     notificationStatusButton.classList.remove('hidden');
-    notificationStatus.classList.remove('hidden');
     return;
   }
 
-  notificationStatus.classList.add('hidden');
+  // Notifications are fully set up
+  notificationStatusText.textContent = '✅ Bildirimler açık';
+  notificationStatusButton.classList.add('hidden');
 }
 
 async function subscribeWithTimeout(registration, applicationServerKey, timeoutMs = 30000) {
@@ -917,6 +926,14 @@ function urlBase64ToUint8Array(base64String) {
 
   return outputArray;
 }
+
+// Handle browser back/forward navigation
+window.addEventListener('hashchange', () => {
+  const hash = window.location.hash.slice(1);
+  if (['main', 'history', 'settings'].includes(hash)) {
+    switchScreen(hash);
+  }
+});
 
 // Initialize on load
 init();
