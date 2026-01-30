@@ -1,6 +1,6 @@
 // HeartBeat Service Worker
 
-const CACHE_NAME = 'heartbeat-v11';
+const CACHE_NAME = 'heartbeat-v12';
 const IMAGE_CACHE_NAME = 'heartbeat-images-v1';
 const CACHE_URLS = [
   '/',
@@ -93,7 +93,7 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   console.log('HeartBeat SW: Push received');
 
-  let data = { title: 'HeartBeat 🐰', body: 'Yeni bir mesajın var!' };
+  let data = { title: 'kuşumplus 🐰', body: 'Yeni bir mesajın var!' };
 
   try {
     data = event.data.json();
