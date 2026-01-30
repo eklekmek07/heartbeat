@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     }
 
     // Get sender's display name
-    let senderName = 'Your partner';
+    let senderName = 'Sevgilin';
     if (senderEndpoint) {
       const { data: prefs } = await supabase
         .from('user_preferences')
@@ -65,14 +65,24 @@ export default async function handler(req, res) {
 
     if (!subscriptions || subscriptions.length === 0) {
       return res.status(200).json({
-        message: 'No partner connected yet',
+        message: 'Sevgilin henüz bağlı değil',
         sent: 0
       });
     }
 
+    // Cute random messages for photos
+    const photoMessages = [
+      'Sana bir fotoğraf gönderdi! 📷💕',
+      'Bak ne güzel! Dokunup aç~ 📷✨',
+      'Sürpriz fotoğraf! 📷🐰',
+      'Senin için bir anı! 📷💗',
+      'Görmek ister misin? 📷💭'
+    ];
+    const randomPhotoMessage = photoMessages[Math.floor(Math.random() * photoMessages.length)];
+
     const payload = {
-      title: `${senderName} sent you a photo`,
-      body: 'Tap to view',
+      title: `${senderName} sana fotoğraf gönderdi 📷`,
+      body: randomPhotoMessage,
       icon: '/assets/icons/icon-192x192.png',
       image: imageUrl,
       data: {
@@ -108,7 +118,7 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json({
-      message: successCount > 0 ? 'Photo sent!' : 'Partner may be offline',
+      message: successCount > 0 ? 'Fotoğraf gönderildi!' : 'Sevgilin çevrimdışı olabilir',
       sent: successCount
     });
   } catch (err) {

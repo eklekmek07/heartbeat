@@ -236,8 +236,8 @@ button:disabled {
 /* Emotion Grid */
 .emotion-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
   margin: 1.5rem 0;
 }
 
@@ -246,9 +246,9 @@ button:disabled {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem 1rem;
+  padding: 1rem 0.5rem;
   background: var(--surface);
-  border-radius: 20px;
+  border-radius: 16px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.08);
   transition: all 0.2s ease;
 }
@@ -272,12 +272,12 @@ button:disabled {
 }
 
 .emotion-icon {
-  font-size: 3rem;
-  margin-bottom: 0.5rem;
+  font-size: 2.25rem;
+  margin-bottom: 0.25rem;
 }
 
 .emotion-label {
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   color: var(--text-light);
 }
 
@@ -599,11 +599,15 @@ button:disabled {
 /* Responsive */
 @media (min-width: 480px) {
   .emotion-btn {
-    padding: 2rem 1.5rem;
+    padding: 1.25rem 1rem;
   }
 
   .emotion-icon {
-    font-size: 4rem;
+    font-size: 2.75rem;
+  }
+
+  .emotion-label {
+    font-size: 0.85rem;
   }
 }
 

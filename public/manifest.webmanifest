@@ -1,7 +1,8 @@
 {
   "name": "HeartBeat",
   "short_name": "HeartBeat",
-  "description": "Send instant 'thinking of you' notifications to your partner",
+  "lang": "tr",
+  "description": "Sevgiline anında 'seni düşünüyorum' bildirimleri gönder",
   "theme_color": "#e91e63",
   "background_color": "#fce4ec",
   "display": "standalone",

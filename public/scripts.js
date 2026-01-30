@@ -218,7 +218,7 @@ async function joinPair() {
   const code = joinCodeInput.value.trim();
 
   if (code.length !== 6) {
-    showJoinError('Please enter a 6-digit code');
+    showJoinError('Lütfen 6 haneli bir kod gir');
     return;
   }
 
@@ -245,11 +245,11 @@ async function joinPair() {
       // Go to main screen
       showMainScreen();
     } else {
-      showJoinError(data.error || 'Invalid code');
+      showJoinError(data.error || 'Geçersiz kod');
     }
   } catch (err) {
     console.error('Failed to join pair:', err);
-    showJoinError('Connection failed');
+    showJoinError('Bağlantı başarısız');
   }
 }
 
@@ -391,15 +391,15 @@ async function requestNotificationPermission() {
 
 function updateNotificationStatus() {
   if (!('Notification' in window)) {
-    notificationStatusText.textContent = '🔔 Notifications not supported on this device';
+    notificationStatusText.textContent = '🔔 Bu cihazda bildirimler desteklenmiyor';
     notificationStatusButton.classList.add('hidden');
     notificationStatus.classList.remove('hidden');
     return;
   }
 
   if (subscribeInFlight) {
-    notificationStatusText.textContent = '🔔 Setting up notifications...';
-    notificationStatusButton.textContent = 'Please wait';
+    notificationStatusText.textContent = '🔔 Bildirimler ayarlanıyor...';
+    notificationStatusButton.textContent = 'Bekle';
     notificationStatusButton.disabled = true;
     notificationStatusButton.classList.remove('hidden');
     notificationStatus.classList.remove('hidden');
@@ -407,8 +407,8 @@ function updateNotificationStatus() {
   }
 
   if (Notification.permission !== 'granted') {
-    notificationStatusText.textContent = '🔔 Enable notifications to receive taps';
-    notificationStatusButton.textContent = 'Enable';
+    notificationStatusText.textContent = '🔔 Mesaj almak için bildirimleri aç';
+    notificationStatusButton.textContent = 'Aç';
     notificationStatusButton.disabled = false;
     notificationStatusButton.classList.remove('hidden');
     notificationStatus.classList.remove('hidden');
@@ -417,9 +417,9 @@ function updateNotificationStatus() {
 
   if (!pushSubscription || lastSubscribeError) {
     notificationStatusText.textContent = lastSubscribeError
-      ? '🔔 Notifications setup failed. Tap to retry.'
-      : '🔔 Finish setting up notifications';
-    notificationStatusButton.textContent = 'Retry';
+      ? '🔔 Bildirim ayarı başarısız. Tekrar dene.'
+      : '🔔 Bildirim ayarını tamamla';
+    notificationStatusButton.textContent = 'Tekrar Dene';
     notificationStatusButton.disabled = false;
     notificationStatusButton.classList.remove('hidden');
     notificationStatus.classList.remove('hidden');
@@ -473,7 +473,7 @@ async function checkPairStatus() {
 
     if (data.partnerConnected) {
       statusDot.className = 'status-dot connected';
-      statusText.textContent = 'Connected to partner';
+      statusText.textContent = 'Sevgilinle bağlısın 💕';
 
       // If on pairing screen, move to main screen
       if (!screenMain.classList.contains('hidden') === false) {
@@ -481,10 +481,10 @@ async function checkPairStatus() {
       }
     } else if (data.deviceCount === 1) {
       statusDot.className = 'status-dot waiting';
-      statusText.textContent = 'Waiting for partner...';
+      statusText.textContent = 'Sevgilin bekleniyor...';
     } else {
       statusDot.className = 'status-dot';
-      statusText.textContent = 'Not connected';
+      statusText.textContent = 'Bağlı değil';
     }
   } catch (err) {
     console.error('Failed to check pair status:', err);
@@ -514,13 +514,13 @@ async function sendTap(emotion) {
     const data = await response.json();
 
     if (data.sent > 0) {
-      showFeedback('Sent! 💕', 'success');
+      showFeedback('Gönderildi! 💕', 'success');
     } else {
-      showFeedback('Partner not connected', 'error');
+      showFeedback('Sevgilin bağlı değil', 'error');
     }
   } catch (err) {
     console.error('Failed to send tap:', err);
-    showFeedback('Failed to send', 'error');
+    showFeedback('Gönderilemedi', 'error');
   }
 
   setTimeout(() => button.classList.remove('sending'), 500);
@@ -537,7 +537,7 @@ function showFeedback(message, type) {
 
 // Reset Pairing
 function resetPairing() {
-  if (confirm('Are you sure you want to disconnect?')) {
+  if (confirm('Bağlantıyı kesmek istediğinden emin misin?')) {
     localStorage.removeItem('heartbeat_pair_id');
     localStorage.removeItem('heartbeat_pair_code');
     pairId = null;
@@ -587,13 +587,13 @@ async function loadPreferences() {
 
 async function saveDisplayName() {
   if (!pairId || !pushSubscription) {
-    showFeedback('Not connected', 'error');
+    showFeedback('Bağlı değil', 'error');
     return;
   }
 
   const displayName = displayNameInput.value.trim();
   if (!displayName) {
-    showFeedback('Please enter a name', 'error');
+    showFeedback('Lütfen bir isim gir', 'error');
     return;
   }
 
@@ -610,13 +610,13 @@ async function saveDisplayName() {
     });
 
     if (response.ok) {
-      showFeedback('Name saved!', 'success');
+      showFeedback('İsim kaydedildi!', 'success');
     } else {
-      showFeedback('Failed to save', 'error');
+      showFeedback('Kaydedilemedi', 'error');
     }
   } catch (err) {
     console.error('Failed to save display name:', err);
-    showFeedback('Failed to save', 'error');
+    showFeedback('Kaydedilemedi', 'error');
   }
 }
 
@@ -624,11 +624,11 @@ function applyBackground(url) {
   if (url) {
     document.body.style.setProperty('--custom-bg', `url(${url})`);
     document.body.classList.add('has-custom-bg');
-    backgroundPreview.innerHTML = `<img src="${url}" alt="Background">`;
+    backgroundPreview.innerHTML = `<img src="${url}" alt="Arka Plan">`;
   } else {
     document.body.style.setProperty('--custom-bg', 'none');
     document.body.classList.remove('has-custom-bg');
-    backgroundPreview.innerHTML = '<span>No background set</span>';
+    backgroundPreview.innerHTML = '<span>Arka plan seçilmedi</span>';
   }
 }
 
@@ -637,7 +637,7 @@ async function handleBackgroundSelected(event) {
   if (!file) return;
 
   try {
-    showFeedback('Uploading...', 'success');
+    showFeedback('Yükleniyor...', 'success');
 
     // Compress image
     const imageData = await compressImage(file, 1200, 0.8);
@@ -669,13 +669,13 @@ async function handleBackgroundSelected(event) {
       });
 
       applyBackground(data.url);
-      showFeedback('Background saved!', 'success');
+      showFeedback('Arka plan kaydedildi!', 'success');
     } else {
-      showFeedback('Upload failed', 'error');
+      showFeedback('Yükleme başarısız', 'error');
     }
   } catch (err) {
     console.error('Failed to upload background:', err);
-    showFeedback('Upload failed', 'error');
+    showFeedback('Yükleme başarısız', 'error');
   }
 
   // Reset input
@@ -698,7 +698,7 @@ async function removeBackground() {
     });
 
     applyBackground(null);
-    showFeedback('Background removed', 'success');
+    showFeedback('Arka plan kaldırıldı', 'success');
   } catch (err) {
     console.error('Failed to remove background:', err);
   }
@@ -714,12 +714,12 @@ async function handlePhotoSelected(event) {
   if (!file) return;
 
   if (!pairId || !pushSubscription) {
-    showFeedback('Not connected', 'error');
+    showFeedback('Bağlı değil', 'error');
     return;
   }
 
   try {
-    showFeedback('Sending photo...', 'success');
+    showFeedback('Fotoğraf gönderiliyor...', 'success');
 
     // Compress image
     const imageData = await compressImage(file, 1200, 0.8);
@@ -738,7 +738,7 @@ async function handlePhotoSelected(event) {
     const uploadData = await uploadResponse.json();
 
     if (!uploadData.url) {
-      showFeedback('Upload failed', 'error');
+      showFeedback('Yükleme başarısız', 'error');
       return;
     }
 
@@ -757,13 +757,13 @@ async function handlePhotoSelected(event) {
     const sendData = await sendResponse.json();
 
     if (sendData.sent > 0) {
-      showFeedback('Photo sent!', 'success');
+      showFeedback('Fotoğraf gönderildi!', 'success');
     } else {
-      showFeedback('Partner not connected', 'error');
+      showFeedback('Sevgilin bağlı değil', 'error');
     }
   } catch (err) {
     console.error('Failed to send photo:', err);
-    showFeedback('Failed to send', 'error');
+    showFeedback('Gönderilemedi', 'error');
   }
 
   // Reset input
@@ -836,7 +836,7 @@ async function loadHistory(reset = false) {
       historyOffset += data.messages.length;
       historyHasMore = data.hasMore;
     } else if (historyOffset === 0) {
-      historyList.innerHTML = '<div class="history-empty">No messages yet</div>';
+      historyList.innerHTML = '<div class="history-empty">Henüz mesaj yok</div>';
     }
   } catch (err) {
     console.error('Failed to load history:', err);
@@ -851,7 +851,11 @@ function renderHistoryMessages(messages) {
     love: '❤️',
     wave: '👋',
     kiss: '😘',
-    fire: '🔥'
+    fire: '🔥',
+    hug: '🤗',
+    sparkle: '✨',
+    bunny: '🐰',
+    moon: '🌙'
   };
 
   for (const msg of messages) {
@@ -872,7 +876,7 @@ function renderHistoryMessages(messages) {
       minute: '2-digit'
     });
 
-    const sender = msg.isMine ? 'You' : (msg.senderName || 'Partner');
+    const sender = msg.isMine ? 'Sen' : (msg.senderName || 'Sevgilin');
 
     item.innerHTML = `
       <div class="history-item-content">${contentHtml}</div>

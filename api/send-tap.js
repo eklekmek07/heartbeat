@@ -1,12 +1,102 @@
 import { supabase } from '../lib/supabase.js';
 import { sendNotification } from '../lib/webpush.js';
 
+// Cute Turkish messages with random variations
 const EMOTIONS = {
-  love: { emoji: '❤️', body: 'Sending you love! 💕', icon: '/assets/icons/icon-192x192.png' },
-  wave: { emoji: '👋', body: 'Hey you! 👋', icon: '/assets/icons/icon-192x192.png' },
-  kiss: { emoji: '😘', body: 'Sending kisses! 💋', icon: '/assets/icons/icon-192x192.png' },
-  fire: { emoji: '🔥', body: 'Thinking of you! 🔥', icon: '/assets/icons/icon-192x192.png' }
+  love: {
+    emoji: '❤️',
+    messages: [
+      'Seni çok seviyorum! 💕',
+      'Dürt dürt! Seni düşünüyorum~ 💕',
+      'Kalbim seninle! 🐰💕',
+      'Sana tüm sevgimi gönderiyorum~ ✨',
+      'Seni seviyorum canım! 💗'
+    ],
+    icon: '/assets/icons/icon-192x192.png'
+  },
+  wave: {
+    emoji: '👋',
+    messages: [
+      'Selaaaam! 👋✨',
+      'Hey tatlım! Nasılsın? 🐰',
+      'Boop! Seni düşündüm~ 💭',
+      'Merhaba canım! 👋💕',
+      'Selamlar aşkım! ✨'
+    ],
+    icon: '/assets/icons/icon-192x192.png'
+  },
+  kiss: {
+    emoji: '😘',
+    messages: [
+      'Muah! Bu öpücüğü yakala~ 💋✨',
+      'Sana öpücükler! 😘💕',
+      'Öpüyorum seni! 💋🐰',
+      'Muuuah! Çok öpücük! 💋💋💋',
+      'Sana minik bir öpücük~ 😘✨'
+    ],
+    icon: '/assets/icons/icon-192x192.png'
+  },
+  hug: {
+    emoji: '🤗',
+    messages: [
+      'Sana kocaman sarılıyorum! 🤗💕',
+      'Sanal sarılma gönderdim~ 🐰🤗',
+      'Sıkı sıkı sarılıyorum! 🤗✨',
+      'Sarılmak istiyorum sana! 💕',
+      'Kucak dolusu sevgi! 🤗💗'
+    ],
+    icon: '/assets/icons/icon-192x192.png'
+  },
+  fire: {
+    emoji: '🔥',
+    messages: [
+      'Aklımdan çıkmıyorsun! 🔥💭',
+      'Çok düşünüyorum seni! 🔥✨',
+      'Sen benim ateşimsin! 🔥💕',
+      'Yanıyorum sensiz! 🔥🐰',
+      'Seni istiyorum! 🔥💗'
+    ],
+    icon: '/assets/icons/icon-192x192.png'
+  },
+  sparkle: {
+    emoji: '✨',
+    messages: [
+      'Sen harikasın ve bunu söylemem gerekti! ✨💕',
+      'Parla parla aşkım! ✨🐰',
+      'Hayatıma ışık saçıyorsun! ✨💗',
+      'Sen bir yıldızsın! ⭐✨',
+      'Muhteşemsin! ✨💕'
+    ],
+    icon: '/assets/icons/icon-192x192.png'
+  },
+  bunny: {
+    emoji: '🐰',
+    messages: [
+      'Zıp zıp! Seni düşünen biri var~ 🐰💕',
+      'Tavşan gibi seni seviyorum! 🐰✨',
+      'Hop hop! Öpücük! 🐰💋',
+      'Minik tavşanın seni seviyor! 🐰💗',
+      'Zıplayarak geldim, seni seviyorum! 🐰💕'
+    ],
+    icon: '/assets/icons/icon-192x192.png'
+  },
+  moon: {
+    emoji: '🌙',
+    messages: [
+      'İyi geceler tatlım~ 🌙💤',
+      'Tatlı rüyalar canım! 🌙✨',
+      'Rüyalarına gireyim mi? 🌙🐰',
+      'İyi uyu, seni seviyorum! 🌙💕',
+      'Gecen güzel olsun aşkım~ 🌙💗'
+    ],
+    icon: '/assets/icons/icon-192x192.png'
+  }
 };
+
+function getRandomMessage(emotion) {
+  const messages = EMOTIONS[emotion].messages;
+  return messages[Math.floor(Math.random() * messages.length)];
+}
 
 export default async function handler(req, res) {
   const requestId = Date.now().toString(36);
@@ -46,7 +136,7 @@ export default async function handler(req, res) {
     }
 
     // Get sender's display name
-    let senderName = 'Your partner';
+    let senderName = 'Sevgilin';
     if (senderEndpoint) {
       console.log(`[${requestId}] send-tap: Fetching sender display name...`);
       const { data: prefs } = await supabase
@@ -96,15 +186,16 @@ export default async function handler(req, res) {
     if (!subscriptions || subscriptions.length === 0) {
       console.log(`[${requestId}] send-tap: No partner subscriptions found`);
       return res.status(200).json({
-        message: 'No partner connected yet',
+        message: 'Sevgilin henüz bağlı değil',
         sent: 0
       });
     }
 
     const emotionData = EMOTIONS[emotion];
+    const randomMessage = getRandomMessage(emotion);
     const payload = {
-      title: `${senderName} sent you ${emotionData.emoji}`,
-      body: emotionData.body,
+      title: `${senderName} sana ${emotionData.emoji} gönderdi`,
+      body: randomMessage,
       icon: emotionData.icon,
       data: {
         type: 'emotion',
@@ -147,7 +238,7 @@ export default async function handler(req, res) {
     }
 
     const response = {
-      message: successCount > 0 ? 'Tap sent!' : 'Partner may be offline',
+      message: successCount > 0 ? 'Gönderildi!' : 'Sevgilin çevrimdışı olabilir',
       sent: successCount
     };
     console.log(`[${requestId}] send-tap: SUCCESS`, response);

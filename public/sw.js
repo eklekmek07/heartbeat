@@ -1,6 +1,6 @@
 // HeartBeat Service Worker
 
-const CACHE_NAME = 'heartbeat-v8';
+const CACHE_NAME = 'heartbeat-v9';
 const IMAGE_CACHE_NAME = 'heartbeat-images-v1';
 const CACHE_URLS = [
   '/',
@@ -93,7 +93,7 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   console.log('HeartBeat SW: Push received');
 
-  let data = { title: 'HeartBeat', body: 'You have a new message!' };
+  let data = { title: 'HeartBeat 🐰', body: 'Yeni bir mesajın var!' };
 
   try {
     data = event.data.json();
@@ -101,13 +101,16 @@ self.addEventListener('push', (event) => {
     console.error('Failed to parse push data:', e);
   }
 
+  // Cute heartbeat vibration pattern: ba-dum ba-dum ba-dum
+  const heartbeatVibration = [100, 50, 100, 200, 100, 50, 100, 200, 100, 50, 100];
+
   const options = {
     body: data.body,
     icon: data.icon || '/assets/icons/icon-192x192.png',
     badge: '/assets/icons/favicon.png',
     tag: 'heartbeat-notification',
     renotify: true,
-    vibrate: [200, 100, 200],
+    vibrate: heartbeatVibration,
     data: data.data || data
   };
 

@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="tr">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="description" content="HeartBeat - Send instant 'thinking of you' notifications to your partner">
+    <meta name="description" content="HeartBeat - Sevgiline anında 'seni düşünüyorum' bildirimleri gönder">
 
     <!-- iOS tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -31,49 +31,49 @@
     <div id="screen-pairing" class="screen">
       <div class="container">
         <div id="pairing-choice">
-          <h2>Connect with your partner</h2>
-          <p class="subtitle">Share instant notifications with a single tap</p>
+          <h2>Sevgilinle Bağlan</h2>
+          <p class="subtitle">Tek dokunuşla anında bildirim gönder</p>
 
           <div class="pairing-buttons">
             <button type="button" class="btn-primary" onclick="showCreatePair()">
-              Create New Pair
+              Yeni Eşleşme Oluştur
             </button>
             <button type="button" class="btn-secondary" onclick="showJoinPair()">
-              Join with Code
+              Kodla Katıl
             </button>
           </div>
         </div>
 
         <div id="pairing-create" class="hidden">
-          <h2>Your Pair Code</h2>
-          <p class="subtitle">Share this code with your partner</p>
+          <h2>Eşleşme Kodun</h2>
+          <p class="subtitle">Bu kodu sevgilinle paylaş</p>
 
           <div class="pair-code" id="pair-code-display">------</div>
 
           <div class="status-box" id="waiting-status">
             <span class="spinner"></span>
-            <span>Waiting for partner to join...</span>
+            <span>Sevgilinin katılması bekleniyor...</span>
           </div>
 
           <button type="button" class="btn-link" onclick="showPairingChoice()">
-            ← Back
+            ← Geri
           </button>
         </div>
 
         <div id="pairing-join" class="hidden">
-          <h2>Enter Pair Code</h2>
-          <p class="subtitle">Get the 6-digit code from your partner</p>
+          <h2>Eşleşme Kodunu Gir</h2>
+          <p class="subtitle">Sevgilinden 6 haneli kodu al</p>
 
           <input type="text" id="join-code-input" maxlength="6" placeholder="000000" inputmode="numeric" pattern="[0-9]*">
 
           <button type="button" class="btn-primary" onclick="joinPair()">
-            Connect
+            Bağlan
           </button>
 
           <div id="join-error" class="error-text hidden"></div>
 
           <button type="button" class="btn-link" onclick="showPairingChoice()">
-            ← Back
+            ← Geri
           </button>
         </div>
       </div>
@@ -84,31 +84,47 @@
       <div class="container main-container">
         <div id="connection-status" class="status-box">
           <span class="status-dot"></span>
-          <span id="status-text">Checking connection...</span>
+          <span id="status-text">Bağlantı kontrol ediliyor...</span>
         </div>
 
-        <h2>Tap to send</h2>
+        <h2>Göndermek için dokun</h2>
 
         <div class="emotion-grid">
           <button type="button" class="emotion-btn" data-emotion="love" onclick="sendTap('love')">
             <span class="emotion-icon">❤️</span>
-            <span class="emotion-label">Love</span>
+            <span class="emotion-label">Aşk</span>
           </button>
           <button type="button" class="emotion-btn" data-emotion="wave" onclick="sendTap('wave')">
             <span class="emotion-icon">👋</span>
-            <span class="emotion-label">Wave</span>
+            <span class="emotion-label">Selam</span>
           </button>
           <button type="button" class="emotion-btn" data-emotion="kiss" onclick="sendTap('kiss')">
             <span class="emotion-icon">😘</span>
-            <span class="emotion-label">Kiss</span>
+            <span class="emotion-label">Öpücük</span>
+          </button>
+          <button type="button" class="emotion-btn" data-emotion="hug" onclick="sendTap('hug')">
+            <span class="emotion-icon">🤗</span>
+            <span class="emotion-label">Sarılma</span>
           </button>
           <button type="button" class="emotion-btn" data-emotion="fire" onclick="sendTap('fire')">
             <span class="emotion-icon">🔥</span>
-            <span class="emotion-label">Fire</span>
+            <span class="emotion-label">Ateş</span>
+          </button>
+          <button type="button" class="emotion-btn" data-emotion="sparkle" onclick="sendTap('sparkle')">
+            <span class="emotion-icon">✨</span>
+            <span class="emotion-label">Parla</span>
+          </button>
+          <button type="button" class="emotion-btn" data-emotion="bunny" onclick="sendTap('bunny')">
+            <span class="emotion-icon">🐰</span>
+            <span class="emotion-label">Tavşan</span>
+          </button>
+          <button type="button" class="emotion-btn" data-emotion="moon" onclick="sendTap('moon')">
+            <span class="emotion-icon">🌙</span>
+            <span class="emotion-label">İyi Gece</span>
           </button>
           <button type="button" class="emotion-btn emotion-btn-photo" onclick="openPhotoPicker()">
             <span class="emotion-icon">📷</span>
-            <span class="emotion-label">Photo</span>
+            <span class="emotion-label">Fotoğraf</span>
           </button>
         </div>
 
@@ -117,8 +133,8 @@
         <div id="tap-feedback" class="feedback hidden"></div>
 
         <div id="notification-status" class="notification-alert hidden">
-          <span>🔔 Enable notifications to receive taps</span>
-          <button type="button" onclick="subscribeToPush()">Enable</button>
+          <span>🔔 Bildirimleri aç ve mesaj al</span>
+          <button type="button" onclick="subscribeToPush()">Aç</button>
         </div>
       </div>
     </div>
@@ -126,9 +142,9 @@
     <!-- History Screen -->
     <div id="screen-history" class="screen hidden">
       <div class="container main-container">
-        <h2>Message History</h2>
+        <h2>Mesaj Geçmişi</h2>
         <div id="history-list" class="history-list">
-          <div class="history-empty">No messages yet</div>
+          <div class="history-empty">Henüz mesaj yok</div>
         </div>
         <div id="history-loading" class="history-loading hidden">
           <span class="spinner"></span>
@@ -139,34 +155,34 @@
     <!-- Settings Screen -->
     <div id="screen-settings" class="screen hidden">
       <div class="container main-container">
-        <h2>Settings</h2>
+        <h2>Ayarlar</h2>
 
         <div class="settings-form">
           <div class="settings-group">
-            <label for="display-name-input">Your Display Name</label>
-            <p class="settings-hint">This is how your partner sees you in notifications</p>
-            <input type="text" id="display-name-input" placeholder="Enter your name" maxlength="30">
-            <button type="button" class="btn-primary btn-save-name" onclick="saveDisplayName()">Save Name</button>
+            <label for="display-name-input">Görünen Adın</label>
+            <p class="settings-hint">Sevgilin seni bildirimlerde böyle görür</p>
+            <input type="text" id="display-name-input" placeholder="Adını gir" maxlength="30">
+            <button type="button" class="btn-primary btn-save-name" onclick="saveDisplayName()">Kaydet</button>
           </div>
 
           <div class="settings-group">
-            <label>Shared Background</label>
-            <p class="settings-hint">Both you and your partner will see this background</p>
+            <label>Ortak Arka Plan</label>
+            <p class="settings-hint">Sen ve sevgilin bu arka planı görürsünüz</p>
             <div id="background-preview" class="background-preview">
-              <span>No background set</span>
+              <span>Arka plan seçilmedi</span>
             </div>
             <input type="file" id="background-input" accept="image/*" style="display: none;" onchange="handleBackgroundSelected(event)">
             <div class="background-buttons">
               <button type="button" class="btn-secondary" onclick="document.getElementById('background-input').click()">
-                Choose Image
+                Resim Seç
               </button>
-              <button type="button" class="btn-link" onclick="removeBackground()">Remove</button>
+              <button type="button" class="btn-link" onclick="removeBackground()">Kaldır</button>
             </div>
           </div>
 
           <div class="settings-group">
             <button type="button" class="btn-link btn-reset" onclick="resetPairing()">
-              Reset Pairing
+              Eşleşmeyi Sıfırla
             </button>
           </div>
         </div>
@@ -177,15 +193,15 @@
     <nav id="bottom-nav" class="bottom-nav hidden">
       <button type="button" class="nav-item active" data-screen="main" onclick="switchScreen('main')">
         <span class="nav-icon">💕</span>
-        <span class="nav-label">Send</span>
+        <span class="nav-label">Gönder</span>
       </button>
       <button type="button" class="nav-item" data-screen="history" onclick="switchScreen('history')">
         <span class="nav-icon">📜</span>
-        <span class="nav-label">History</span>
+        <span class="nav-label">Geçmiş</span>
       </button>
       <button type="button" class="nav-item" data-screen="settings" onclick="switchScreen('settings')">
         <span class="nav-icon">⚙️</span>
-        <span class="nav-label">Settings</span>
+        <span class="nav-label">Ayarlar</span>
       </button>
     </nav>
 
@@ -195,7 +211,7 @@
       <img id="image-viewer-img" src="" alt="Full size image">
     </div>
 
-    <noscript>Please enable JavaScript to use HeartBeat.</noscript>
+    <noscript>HeartBeat'i kullanmak için JavaScript'i etkinleştirin.</noscript>
 
     <script src="scripts.js"></script>
   </body>
