@@ -1,6 +1,6 @@
 // HeartBeat Service Worker
 
-const CACHE_NAME = 'heartbeat-v6';
+const CACHE_NAME = 'heartbeat-v7';
 const IMAGE_CACHE_NAME = 'heartbeat-images-v1';
 const CACHE_URLS = [
   '/',

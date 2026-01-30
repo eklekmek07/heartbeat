@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <!-- Subtle face gradient -->
+    <radialGradient id="faceGradient" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f5f5f5"/>
+    </radialGradient>
+    <!-- Ear inner gradient -->
+    <linearGradient id="earInnerGradient" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#fce4ec"/>
+      <stop offset="100%" stop-color="#f8bbd9"/>
+    </linearGradient>
+    <!-- Cheek glow -->
+    <radialGradient id="cheekGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#f8bbd9"/>
+      <stop offset="100%" stop-color="#f8bbd9" stop-opacity="0.3"/>
+    </radialGradient>
+    <!-- Heart gradient -->
+    <linearGradient id="heartGradient" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#f06292"/>
+      <stop offset="100%" stop-color="#e91e63"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Left ear outer -->
+  <ellipse cx="44" cy="28" rx="14" ry="28" fill="#ffffff" stroke="#f5f5f5" stroke-width="1"/>
+  <!-- Left ear inner -->
+  <ellipse cx="44" cy="30" rx="8" ry="20" fill="url(#earInnerGradient)"/>
+
+  <!-- Right ear outer -->
+  <ellipse cx="84" cy="28" rx="14" ry="28" fill="#ffffff" stroke="#f5f5f5" stroke-width="1"/>
+  <!-- Right ear inner -->
+  <ellipse cx="84" cy="30" rx="8" ry="20" fill="url(#earInnerGradient)"/>
+
+  <!-- Face -->
+  <circle cx="64" cy="76" r="42" fill="url(#faceGradient)" stroke="#f0f0f0" stroke-width="1"/>
+
+  <!-- Left cheek -->
+  <ellipse cx="32" cy="82" rx="10" ry="7" fill="url(#cheekGlow)"/>
+  <!-- Right cheek -->
+  <ellipse cx="96" cy="82" rx="10" ry="7" fill="url(#cheekGlow)"/>
+
+  <!-- Left eye -->
+  <ellipse cx="48" cy="70" rx="8" ry="10" fill="#333333"/>
+  <!-- Left eye highlight big -->
+  <circle cx="45" cy="67" r="3" fill="#ffffff"/>
+  <!-- Left eye highlight small -->
+  <circle cx="51" cy="73" r="1.5" fill="#ffffff"/>
+
+  <!-- Right eye -->
+  <ellipse cx="80" cy="70" rx="8" ry="10" fill="#333333"/>
+  <!-- Right eye highlight big -->
+  <circle cx="77" cy="67" r="3" fill="#ffffff"/>
+  <!-- Right eye highlight small -->
+  <circle cx="83" cy="73" r="1.5" fill="#ffffff"/>
+
+  <!-- Heart nose -->
+  <path d="M64 86
+           C64 86 58 80 58 77
+           C58 74 60 72 62 72
+           C63.5 72 64 73 64 73
+           C64 73 64.5 72 66 72
+           C68 72 70 74 70 77
+           C70 80 64 86 64 86Z"
+        fill="url(#heartGradient)"/>
+
+  <!-- Mouth - cute w shape -->
+  <path d="M56 94 Q60 98 64 94 Q68 98 72 94"
+        fill="none" stroke="#e91e63" stroke-width="2" stroke-linecap="round"/>
+</svg>

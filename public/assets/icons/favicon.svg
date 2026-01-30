@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <!-- Face gradient -->
+    <radialGradient id="faceGrad" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f8f8f8"/>
+    </radialGradient>
+    <!-- Ear inner -->
+    <linearGradient id="earInner" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#fce4ec"/>
+      <stop offset="100%" stop-color="#f8bbd9"/>
+    </linearGradient>
+    <!-- Heart gradient -->
+    <linearGradient id="heartGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#f06292"/>
+      <stop offset="100%" stop-color="#e91e63"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Left ear outer -->
+  <ellipse cx="11" cy="7" rx="4" ry="7" fill="#ffffff" stroke="#f0f0f0" stroke-width="0.5"/>
+  <!-- Left ear inner -->
+  <ellipse cx="11" cy="7.5" rx="2" ry="5" fill="url(#earInner)"/>
+
+  <!-- Right ear outer -->
+  <ellipse cx="21" cy="7" rx="4" ry="7" fill="#ffffff" stroke="#f0f0f0" stroke-width="0.5"/>
+  <!-- Right ear inner -->
+  <ellipse cx="21" cy="7.5" rx="2" ry="5" fill="url(#earInner)"/>
+
+  <!-- Face -->
+  <circle cx="16" cy="19" r="11" fill="url(#faceGrad)" stroke="#f0f0f0" stroke-width="0.5"/>
+
+  <!-- Left cheek -->
+  <circle cx="8" cy="20.5" r="2.5" fill="#f8bbd9" opacity="0.7"/>
+  <!-- Right cheek -->
+  <circle cx="24" cy="20.5" r="2.5" fill="#f8bbd9" opacity="0.7"/>
+
+  <!-- Left eye -->
+  <ellipse cx="12" cy="17" rx="2" ry="2.5" fill="#333333"/>
+  <!-- Left eye highlight -->
+  <circle cx="11.3" cy="16.3" r="0.8" fill="#ffffff"/>
+
+  <!-- Right eye -->
+  <ellipse cx="20" cy="17" rx="2" ry="2.5" fill="#333333"/>
+  <!-- Right eye highlight -->
+  <circle cx="19.3" cy="16.3" r="0.8" fill="#ffffff"/>
+
+  <!-- Heart nose -->
+  <path d="M16 22.5
+           C16 22.5 14 20.5 14 19.5
+           C14 18.5 14.8 18 15.5 18
+           C15.9 18 16 18.3 16 18.3
+           C16 18.3 16.1 18 16.5 18
+           C17.2 18 18 18.5 18 19.5
+           C18 20.5 16 22.5 16 22.5Z"
+        fill="url(#heartGrad)"/>
+
+  <!-- Mouth -->
+  <path d="M14 24 Q15 25.5 16 24 Q17 25.5 18 24"
+        fill="none" stroke="#e91e63" stroke-width="0.8" stroke-linecap="round"/>
+</svg>
