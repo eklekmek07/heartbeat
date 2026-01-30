@@ -70,13 +70,13 @@ export default async function handler(req, res) {
       });
     }
 
-    // Cute random messages for photos
+    // Natural loving messages for photos
     const photoMessages = [
-      'Sana bir fotoğraf gönderdi! 📷💕',
-      'Bak ne güzel! Dokunup aç~ 📷✨',
-      'Sürpriz fotoğraf! 📷🐰',
-      'Senin için bir anı! 📷💗',
-      'Görmek ister misin? 📷💭'
+      'Sana bir şey göstermek istedim 📷',
+      'Bak ne buldum, seni düşündüm',
+      'Bu anı seninle paylaşmak istedim',
+      'Senin için çektim 📷',
+      'Baksana şuna 💕'
     ];
     const randomPhotoMessage = photoMessages[Math.floor(Math.random() * photoMessages.length)];
 

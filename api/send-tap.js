@@ -1,93 +1,93 @@
 import { supabase } from '../lib/supabase.js';
 import { sendNotification } from '../lib/webpush.js';
 
-// Cute Turkish messages with random variations
+// Natural, loving Turkish messages
 const EMOTIONS = {
   love: {
     emoji: '❤️',
     messages: [
-      'Seni çok seviyorum! 💕',
-      'Dürt dürt! Seni düşünüyorum~ 💕',
-      'Kalbim seninle! 🐰💕',
-      'Sana tüm sevgimi gönderiyorum~ ✨',
-      'Seni seviyorum canım! 💗'
+      'Canım benim, seni seviyorum 💕',
+      'Aklımdasın, hep aklımdasın',
+      'Seni öyle çok seviyorum ki...',
+      'Birtanem benim ❤️',
+      'Kalbim senin için atıyor'
     ],
     icon: '/assets/icons/icon-192x192.png'
   },
   wave: {
     emoji: '👋',
     messages: [
-      'Selaaaam! 👋✨',
-      'Hey tatlım! Nasılsın? 🐰',
-      'Boop! Seni düşündüm~ 💭',
-      'Merhaba canım! 👋💕',
-      'Selamlar aşkım! ✨'
+      'Aklıma düştün, selam verdim 👋',
+      'Napıyon sen? Özledim',
+      'Hey, bir dakika seni düşündüm',
+      'Canım nasılsın?',
+      'Senden haber bekliyorum 💭'
     ],
     icon: '/assets/icons/icon-192x192.png'
   },
   kiss: {
     emoji: '😘',
     messages: [
-      'Muah! Bu öpücüğü yakala~ 💋✨',
-      'Sana öpücükler! 😘💕',
-      'Öpüyorum seni! 💋🐰',
-      'Muuuah! Çok öpücük! 💋💋💋',
-      'Sana minik bir öpücük~ 😘✨'
+      'Gözlerinden öpüyorum 💋',
+      'Öpücük gönderdim, yakala!',
+      'Dudaklarını özledim 😘',
+      'Yanağından öpüyorum canım',
+      'Sana bir öpücük daha 💋'
     ],
     icon: '/assets/icons/icon-192x192.png'
   },
   hug: {
     emoji: '🤗',
     messages: [
-      'Sana kocaman sarılıyorum! 🤗💕',
-      'Sanal sarılma gönderdim~ 🐰🤗',
-      'Sıkı sıkı sarılıyorum! 🤗✨',
-      'Sarılmak istiyorum sana! 💕',
-      'Kucak dolusu sevgi! 🤗💗'
+      'Sarılasım geldi sana 🤗',
+      'Keşke yanımda olsan, sarılsam',
+      'Sıkı sıkı sarılıyorum',
+      'Kokunu özledim, sarılmak istiyorum',
+      'Kucağıma gel 💕'
     ],
     icon: '/assets/icons/icon-192x192.png'
   },
   fire: {
     emoji: '🔥',
     messages: [
-      'Aklımdan çıkmıyorsun! 🔥💭',
-      'Çok düşünüyorum seni! 🔥✨',
-      'Sen benim ateşimsin! 🔥💕',
-      'Yanıyorum sensiz! 🔥🐰',
-      'Seni istiyorum! 🔥💗'
+      'Aklımdan çıkmıyorsun 🔥',
+      'Seni çok istiyorum',
+      'Deliler gibi özledim',
+      'Sensiz yapamıyorum',
+      'Yanıyorum sensiz 🔥'
     ],
     icon: '/assets/icons/icon-192x192.png'
   },
   sparkle: {
     emoji: '✨',
     messages: [
-      'Sen harikasın ve bunu söylemem gerekti! ✨💕',
-      'Parla parla aşkım! ✨🐰',
-      'Hayatıma ışık saçıyorsun! ✨💗',
-      'Sen bir yıldızsın! ⭐✨',
-      'Muhteşemsin! ✨💕'
+      'Hayatımın anlamısın ✨',
+      'Seninle her şey daha güzel',
+      'Gözüm başka güzel görmüyor',
+      'Sen benim her şeyimsin',
+      'Dünyalar güzeli benim ✨'
     ],
     icon: '/assets/icons/icon-192x192.png'
   },
   bunny: {
     emoji: '🐰',
     messages: [
-      'Zıp zıp! Seni düşünen biri var~ 🐰💕',
-      'Tavşan gibi seni seviyorum! 🐰✨',
-      'Hop hop! Öpücük! 🐰💋',
-      'Minik tavşanın seni seviyor! 🐰💗',
-      'Zıplayarak geldim, seni seviyorum! 🐰💕'
+      'Tavşanın seni seviyor 🐰',
+      'Şapşik şeyim benim',
+      'Tatlı şeyim, seni düşündüm',
+      'Ponçiğim benim 🐰',
+      'Minik tavşanından öpücükler'
     ],
     icon: '/assets/icons/icon-192x192.png'
   },
   moon: {
     emoji: '🌙',
     messages: [
-      'İyi geceler tatlım~ 🌙💤',
-      'Tatlı rüyalar canım! 🌙✨',
-      'Rüyalarına gireyim mi? 🌙🐰',
-      'İyi uyu, seni seviyorum! 🌙💕',
-      'Gecen güzel olsun aşkım~ 🌙💗'
+      'Tatlı rüyalar balım 🌙',
+      'İyi geceler hayatım, rüyama gir',
+      'Uyumadan öpeyim seni',
+      'Gecen güzel olsun canım',
+      'Yarın görüşürüz, iyi uyu 🌙'
     ],
     icon: '/assets/icons/icon-192x192.png'
   }
